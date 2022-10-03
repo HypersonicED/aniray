@@ -18,7 +18,7 @@ Checks: "-*,
   -google-explicit-constructor,
   -hicpp-explicit-conversions"
 WarningsAsErrors: "*"
-HeaderFilterRegex: ".*"
+HeaderFilterRegex: "include/.*"
 UseColor: true
 AnalyzeTemporaryDtors: false
 FormatStyle: llvm

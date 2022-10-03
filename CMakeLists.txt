@@ -22,40 +22,37 @@ if(NOT LEDPIXEL_WITHOUT_OLA)
   pkg_check_modules(LIBOLA libola>=0.10.8 REQUIRED)
 endif()
 
-add_library(csv OBJECT lib/fast-cpp-csv-parser/csv.h)
-
 add_library(
   ${CMAKE_PROJECT_NAME}
   include/ledpixel/DMXAddr.hpp
   include/ledpixel/LEDPixel.hpp
-  # include/ledpixel/LEDPixelAnimation.hpp
+  include/ledpixel/LEDPixelAnimation.hpp
   include/ledpixel/LEDPixels.hpp
-  # include/ledpixel/LEDPixelsOutput.hpp
-  # include/ledpixel/LEDPixelsOutputOLA.hpp
-  # include/ledpixel/LEDPixelsSampler.hpp
+  include/ledpixel/LEDPixelsOutput.hpp
+  include/ledpixel/LEDPixelsSampler.hpp
   src/DMXAddr.cpp
   src/LEDPixel.cpp
-  src/lintHelper.cpp
-  $<TARGET_OBJECTS:csv>)
+  src/lintHelper.cpp)
+if(NOT LEDPIXEL_WITHOUT_OLA)
+  # Private to avoid double linking https://stackoverflow.com/a/34533415
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/ledpixel/LEDPixelsOutputOLA.hpp)
+endif()
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror)
 set_target_properties(
   ${CMAKE_PROJECT_NAME}
   PROPERTIES LINKER_LANGUAGE CXX
              # CXX_EXTENSIONS OFF
-             CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE}" "-Xiwyu" "--cxx17ns"
+            #  CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE}" "-Xiwyu" "--cxx17ns"
              CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-if(LEDPIXEL_WITHOUT_OLA)
-  target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC LEDPIXEL_WITHOUT_OLA)
-endif()
 
 target_include_directories(
   ${CMAKE_PROJECT_NAME}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:include>)
 
-# target_include_directories(${CMAKE_PROJECT_NAME}
-#                            PRIVATE lib/fast-cpp-csv-parser)
+target_include_directories(${CMAKE_PROJECT_NAME}
+                           PRIVATE lib/fast-cpp-csv-parser)
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE lib/color/src)
 
 install(

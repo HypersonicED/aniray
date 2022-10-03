@@ -16,6 +16,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <ios>
 #include <map>
@@ -26,15 +27,19 @@
 #include <tuple>
 #include <vector>
 
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/centroid.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/multi/geometries/multi_point.hpp>
+#include <boost/geometry/strategies/transform/matrix_transformers.hpp>
+#include <boost/log/trivial.hpp>
 #include <openssl/evp.h>
 
-#include "csv/csv.h"
+#include "csv.h"
 
 #include <ledpixel/LEDPixel.hpp>
 
@@ -43,6 +48,8 @@ namespace ledpixel {
 using MultiPoint = boost::geometry::model::multi_point<Point>;
 using Box = boost::geometry::model::box<Point>;
 using std::uint8_t;
+
+const size_t LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS = 10;
 
 template <typename LEDPixelT>
 class LEDPixels {
@@ -95,7 +102,7 @@ class LEDPixels {
     LEDPixels(std::tuple<std::vector<LEDPixelT>, std::map<std::string, std::vector<size_t>>> pixelsAndGroups)  // NOLINT(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
         : LEDPixels(std::get<0>(pixelsAndGroups), std::get<1>(pixelsAndGroups)) {}
     // csv file
-    LEDPixels(std::string filename)  // NOLINT(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
+    LEDPixels(const std::string &filename)  // NOLINT(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
         : LEDPixels{ pixelsFromCSV(filename) } {}
     // auto grid from target for sampler
     LEDPixels(LEDPixels &targetLEDPixels, bool useCache, double spacing)  // NOLINT(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
@@ -106,7 +113,7 @@ class LEDPixels {
             }
         }
 
-        auto pixelGroupsToString(std::shared_ptr<LEDPixelT> pixel, std::string &groupsStr) const -> size_t {
+        auto pixelGroupsToString(std::shared_ptr<LEDPixelT> pixel, std::string *groupsStr) -> size_t {
             std::ostringstream groups;
             size_t count = 0;
             for (auto const& [groupName, groupPixels] : mGroups) {
@@ -118,7 +125,7 @@ class LEDPixels {
                     count++;
                 }
             }
-            groupsStr = groups.str();
+            *groupsStr = groups.str();
             return count;
         }
         friend auto operator << (std::ostream &out, const LEDPixels<LEDPixelT> &L) -> std::ostream & {
@@ -127,20 +134,20 @@ class LEDPixels {
             out << " pixelsAndGroups: (";
             for( std::shared_ptr<LEDPixelT> pixel: L.mPixels ) {
                 std::string pixelGroups;
-                L.pixelGroupsToString(pixel, pixelGroups);
+                L.pixelGroupsToString(pixel, &pixelGroups);
                 out << "{ pixel: {" << *pixel;
                 out << "} groups: (" << pixelGroups << ")},";
             }
             out << ")";
             return out;
         }
-        void pixelsToCSV(std::string filename) const
+        void pixelsToCSV(const std::string &filename) const
         {
             std::ofstream file(filename);
             file << "universe" << ",startAddr" << ",x" << ",y" << ",z" << ",xDeg" << ",yDeg" << ",zDeg" << ",ignore" << ",groups" << std::endl;
             for( std::shared_ptr<LEDPixelT> pixel: mPixels ) {
                 std::string pixelGroups;
-                size_t groupsCount = pixelGroupsToString(pixel, pixelGroups);
+                size_t groupsCount = pixelGroupsToString(pixel, &pixelGroups);
                 file << pixel->mAddr.mUniverse << "," << int(pixel->mAddr.mAddr);
                 file << "," << std::to_string(pixel->mCoords.x()) << "," << std::to_string(pixel->mCoords.z()*-1) << "," << std::to_string(pixel->mCoords.y()); // Real world z is up, in sim y is up
                 file << "," << std::to_string(pixel->mRot.z()*-1) << "," << std::to_string(pixel->mRot.y()*-1) << "," << std::to_string(pixel->mRot.x()*-1);
@@ -168,17 +175,22 @@ class LEDPixels {
         auto pixelsFromCSV(const std::string &filename) const -> std::tuple<std::vector<LEDPixelT>, std::map<std::string, std::vector<size_t>>> {
             std::vector<LEDPixelT> ledPixels;
             io::CSVReader<
-                10,
+                LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS,
                 io::trim_chars<' ', '\t'>,
                 io::double_quote_escape<',', '"'>
             >in(filename);
             in.read_header(io::ignore_extra_column, "universe", "startAddr", "x", "y", "z", "xDeg", "yDeg", "zDeg", "ignore", "groups");
-            uint32_t universe;
-            uint8_t startAddr;
-            double x, y, z;
-            double xDeg, yDeg, zDeg;
-            std::string ignoreStr, groupsStr;
-            bool ignore;
+            uint32_t universe = 0;
+            uint8_t startAddr = 0;
+            double x = 0;
+            double y = 0;
+            double z = 0;
+            double xDeg = 0;
+            double yDeg = 0;
+            double zDeg = 0;
+            std::string ignoreStr;
+            std::string groupsStr;
+            bool ignore = false;
             std::map<std::string, std::vector<size_t>> groups;
             size_t index = 0;
             // Real world z is up, in sim y is up
@@ -186,9 +198,9 @@ class LEDPixels {
                 boost::algorithm::trim(ignoreStr);
                 boost::algorithm::to_lower(ignoreStr);
                 DMXAddr addr{universe, startAddr};
-                if (ignoreStr.compare("true") == 0) {
+                if (ignoreStr == "true") {
                     ignore = true;
-                } else if (ignoreStr.compare("false") == 0) {
+                } else if (ignoreStr == "false") {
                     ignore = false;
                 } else {
                     ignore = true;
@@ -208,13 +220,13 @@ class LEDPixels {
                     Point(zDeg*-1, yDeg*-1, xDeg*-1),
                     addr,
                     ignore,
-                    1.0f
+                    1.0F
                 ));
                 index++;
             }
             return std::make_tuple(ledPixels, groups);
         }
-        std::vector<LEDPixelT> pixelGridFromTargetSpacing(LEDPixels &targetLEDPixels, bool useCache, double spacing) const
+        auto pixelGridFromTargetSpacing(LEDPixels &targetLEDPixels, bool useCache, double spacing) const -> std::vector<LEDPixelT>
         {
             if (useCache) {
                 std::string cacheName = getCacheName(spacing, targetLEDPixels.mHash);
@@ -231,46 +243,81 @@ class LEDPixels {
             boost::geometry::strategy::transform::translate_transformer<double, 3, 3> gridEndTranslation(spacing, spacing, spacing);
             Point gridEnd;
             boost::geometry::transform(targetMax, gridEnd, gridEndTranslation);
-            size_t numX = ((gridEnd.x() - gridStart.x()) / spacing) + 1;
-            size_t numY = ((gridEnd.y() - gridStart.y()) / spacing) + 1;
-            size_t numZ = ((gridEnd.z() - gridStart.z()) / spacing) + 1;
+            size_t numX = static_cast<size_t>((gridEnd.x() - gridStart.x()) / spacing) + 1;
+            size_t numY = static_cast<size_t>((gridEnd.y() - gridStart.y()) / spacing) + 1;
+            size_t numZ = static_cast<size_t>((gridEnd.z() - gridStart.z()) / spacing) + 1;
             std::vector<LEDPixelT> ledPixels;
-            std::map<double, double> comparableDistances;
+            // std::map<double, double> comparableDistances;
             for (size_t i = 0; i < numX; i++) {
                 for (size_t j = 0; j < numY; j++) {
                     for (size_t k = 0; k < numZ; k++) {
-                        double x = i * spacing + gridStart.x();
-                        double y = j * spacing + gridStart.y();
-                        double z = k * spacing + gridStart.z();
+                        double x = static_cast<double>(i) * spacing + gridStart.x();
+                        double y = static_cast<double>(j) * spacing + gridStart.y();
+                        double z = static_cast<double>(k) * spacing + gridStart.z();
                         Point newPoint(x, y, z);
-                        for ( std::shared_ptr<LEDPixelT> targetPixel: targetLEDPixels.mPixels ) {
-                            if (targetPixel->mIgnore) continue;
-                            Point targetCoords = targetPixel->mCoords;
-                            double sampleRadius = targetPixel->mSampleRadius;
-                            if (std::abs(targetCoords.x() - x) > sampleRadius) continue;
-                            if (std::abs(targetCoords.y() - y) > sampleRadius) continue;
-                            if (std::abs(targetCoords.z() - z) > sampleRadius) continue;
-                            if (comparableDistances.count(sampleRadius) <= 0) {
-                                comparableDistances[sampleRadius] = boost::geometry::comparable_distance(
-                                    Point(targetCoords.x() - sampleRadius, targetCoords.y(), targetCoords.z()),
-                                    targetCoords
-                                );
-                            }
-                            double compare = comparableDistances[sampleRadius];
-                            double distance = boost::geometry::comparable_distance(newPoint, targetCoords);
-                            if (distance > compare) {
-                                continue;
-                            }
+                        findPixelsInRadiusOfSource(newPoint, [&newPoint, &ledPixels]() -> bool {
                             ledPixels.push_back(LEDPixelT(
                                 newPoint,
                                 Point(0,0,0)
                             ));
-                            break;
-                        }
+                            return true;
+                        });
+                        // for ( std::shared_ptr<LEDPixelT> targetPixel: targetLEDPixels.mPixels ) {
+                        //     if (targetPixel->mIgnore) { continue; }
+                        //     Point targetCoords = targetPixel->mCoords;
+                        //     double sampleRadius = targetPixel->mSampleRadius;
+                        //     if (std::abs(targetCoords.x() - x) > sampleRadius) { continue; }
+                        //     if (std::abs(targetCoords.y() - y) > sampleRadius) { continue; }
+                        //     if (std::abs(targetCoords.z() - z) > sampleRadius) { continue; }
+                        //     if (comparableDistances.count(sampleRadius) <= 0) {
+                        //         comparableDistances[sampleRadius] = boost::geometry::comparable_distance(
+                        //             Point(targetCoords.x() - sampleRadius, targetCoords.y(), targetCoords.z()),
+                        //             targetCoords
+                        //         );
+                        //     }
+                        //     double compare = comparableDistances[sampleRadius];
+                        //     double distance = boost::geometry::comparable_distance(newPoint, targetCoords);
+                        //     if (distance > compare) {
+                        //         continue;
+                        //     }
+                        //     ledPixels.push_back(LEDPixelT(
+                        //         newPoint,
+                        //         Point(0,0,0)
+                        //     ));
+                        //     break;
+                        // }
                     }
                 }
             }
             return ledPixels;
+        }
+
+        void findPixelsInRadiusOfSource(Point sourceCoords, std::function<bool(std::shared_ptr<LEDPixelT>)> onFind) {
+            static std::map<double, double> comparableDistances;
+            for ( std::shared_ptr<LEDPixelT> targetPixel : mPixels ) {
+                if (targetPixel->mIgnore) { continue; }
+                Point targetCoords = targetPixel->mCoords;
+                double sampleRadius = targetPixel->mSampleRadius;
+                if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) { continue; }
+                if (std::abs(targetCoords.y() - sourceCoords.y()) > sampleRadius) { continue; }
+                if (std::abs(targetCoords.z() - sourceCoords.z()) > sampleRadius) { continue; }
+                if (comparableDistances.count(sampleRadius) <= 0) {
+                    comparableDistances[sampleRadius] = boost::geometry::comparable_distance(
+                        Point(targetCoords.x() - sampleRadius, targetCoords.y(), targetCoords.z()),
+                        targetCoords
+                    );
+                }
+                double compare = 0;
+                compare = comparableDistances[sampleRadius];
+                double distance = boost::geometry::comparable_distance(sourceCoords, targetCoords);
+                if (distance > compare) {
+                    continue;
+                }
+                bool breakAfterFind = onFind(targetPixel);
+                if (breakAfterFind) {
+                    break;
+                }
+            }
         }
 };
 
