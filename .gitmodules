@@ -4,6 +4,3 @@
 [submodule "lib/color"]
 	path = lib/color
 	url = https://github.com/dmilos/color
-[submodule "lib/Format.cmake"]
-	path = lib/Format.cmake
-	url = https://github.com/TheLartians/Format.cmake
