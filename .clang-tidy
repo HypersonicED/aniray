@@ -15,8 +15,10 @@ Checks: "-*,
   portability-*,
   readability-*,
   -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-type-member-init,
   -google-explicit-constructor,
-  -hicpp-explicit-conversions"
+  -hicpp-explicit-conversions,
+  -hicpp-member-init"
 WarningsAsErrors: "*"
 HeaderFilterRegex: "include/.*"
 UseColor: true

@@ -17,24 +17,22 @@
 
 namespace ledpixel {
 
-template <typename LEDPixelsT>
-class LEDPixelAnimation {
-    public:
-        using InnerLEDPixelsT = LEDPixelsT;
+template <typename LEDPixelsT> class LEDPixelAnimation {
+public:
+  using InnerLEDPixelsT = LEDPixelsT;
 
+  LEDPixelAnimation(LEDPixelsT &ledPixels) : mLEDPixels{ledPixels} {}
 
-        LEDPixelAnimation( LEDPixelsT &ledPixels )
-            : mLEDPixels{ ledPixels } {}
+  void frame() {
+    if (++mFrameCount == 0) {
+      BOOST_LOG_TRIVIAL(debug)
+          << typeid(*this).name() << ": Frame count looping to 0.";
+    }
+  }
 
-        void frame()
-        {
-            if (++mFrameCount == 0) {
-                BOOST_LOG_TRIVIAL(debug) << typeid(*this).name() << ": Frame count looping to 0.";
-            }
-        }
-    private:
-        size_t mFrameCount = std::numeric_limits<size_t>::max();
-        LEDPixelsT &mLEDPixels;
+private:
+  size_t mFrameCount = std::numeric_limits<size_t>::max();
+  LEDPixelsT &mLEDPixels;
 };
 
 } // namespace ledpixel

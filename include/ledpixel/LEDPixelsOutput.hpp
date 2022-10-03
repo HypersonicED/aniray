@@ -17,36 +17,35 @@
 
 namespace ledpixel {
 
-template <typename LEDPixelsT, auto ColorToOutput>
-class LEDPixelsOutput {
-    public:
-        using InnerLEDPixelsT = LEDPixelsT;
+template <typename LEDPixelsT, auto ColorToOutput> class LEDPixelsOutput {
+public:
+  using InnerLEDPixelsT = LEDPixelsT;
 
-        LEDPixelsOutput( LEDPixelsT &ledPixels )
-            : mLEDPixels{ ledPixels } {}
+  LEDPixelsOutput(LEDPixelsT &ledPixels) : mLEDPixels{ledPixels} {}
 
-        auto updateAndSend() -> bool
-        {
-            using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
-            using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
-            for( std::shared_ptr<LEDPixelT> pixel: mLEDPixels.mPixels ) {
-                if (pixel->mIgnore) { continue; }
-                DMXAddr addr = pixel->mAddr;
-                ColorT color = pixel->mColor;
-                auto output = ColorToOutput(color);
-                for (int i = 0; i < sizeof(output); i++) {
-                    setChannel(addr.mUniverse, (addr.mAddr - 1) + i, output[i]);
-                }
-            }
-            return sendData();
-        }
-    protected:
-        virtual void setChannel( uint32_t universe, uint8_t channel, uint8_t data ) {}
-        virtual auto sendData() -> bool {
-            return false;
-        }
-    private:
-        LEDPixelsT &mLEDPixels;
+  auto updateAndSend() -> bool {
+    using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
+    using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
+    for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.mPixels) {
+      if (pixel->mIgnore) {
+        continue;
+      }
+      DMXAddr addr = pixel->mAddr;
+      ColorT color = pixel->mColor;
+      auto output = ColorToOutput(color);
+      for (int i = 0; i < sizeof(output); i++) {
+        setChannel(addr.mUniverse, (addr.mAddr - 1) + i, output[i]);
+      }
+    }
+    return sendData();
+  }
+
+protected:
+  virtual void setChannel(uint32_t universe, uint8_t channel, uint8_t data) {}
+  virtual auto sendData() -> bool { return false; }
+
+private:
+  LEDPixelsT &mLEDPixels;
 };
 
 } // namespace ledpixel

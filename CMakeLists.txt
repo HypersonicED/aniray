@@ -15,7 +15,7 @@ find_package(OpenSSL 1.1.0 REQUIRED)
 find_program(IWYU_EXE NAMES include-what-you-use iwyu REQUIRED)
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy" "clang-tidy-13" "clang-tidy-12"
                                   "clang-tidy-11" REQUIRED)
-add_subdirectory(lib/Format.cmake)
+# add_subdirectory(lib/Format.cmake)
 
 if(NOT LEDPIXEL_WITHOUT_OLA)
   find_package(PkgConfig)
