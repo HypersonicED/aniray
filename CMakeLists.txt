@@ -31,6 +31,7 @@ add_library(
   include/ledpixel/LEDPixelsOutput.hpp
   include/ledpixel/LEDPixelsSampler.hpp
   src/DMXAddr.cpp)
+add_library("${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}" ALIAS "${CMAKE_PROJECT_NAME}")
 
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror)
@@ -72,8 +73,21 @@ target_include_directories(${CMAKE_PROJECT_NAME}
                            PRIVATE lib/fast-cpp-csv-parser)
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE lib/color/src)
 
+set(TARGETS_EXPORT_NAME "${CMAKE_PROJECT_NAME}Config")
 install(
   TARGETS ${CMAKE_PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin)
+  EXPORT               "${TARGETS_EXPORT_NAME}"
+  LIBRARY DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
+  ARCHIVE DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
+  RUNTIME DESTINATION  "${CMAKE_INSTALL_BINDIR}"
+  INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+export(
+  TARGETS ${CMAKE_PROJECT_NAME}
+  NAMESPACE ${CMAKE_PROJECT_NAME}::
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/${TARGETS_EXPORT_NAME}.cmake"
+)
+install(
+  EXPORT ${TARGETS_EXPORT_NAME}
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/${CMAKE_PROJECT_NAME}/cmake"
+  NAMESPACE ${CMAKE_PROJECT_NAME}::
+)
