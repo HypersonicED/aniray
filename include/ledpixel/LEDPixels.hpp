@@ -202,7 +202,7 @@ public:
       file << "," << std::to_string(pixel->rot().z() * -1) << ","
            << std::to_string(pixel->rot().y() * -1) << ","
            << std::to_string(pixel->rot().x() * -1);
-      file << "," << std::boolalpha << pixel->mIgnore;
+      file << "," << std::boolalpha << pixel->ignore();
       if (groupsCount >= 2) {
         file << ",\"";
       } else {
@@ -327,7 +327,7 @@ private:
               });
           // for ( std::shared_ptr<LEDPixelT> targetPixel:
           // targetLEDPixels.mPixels ) {
-          //     if (targetPixel->mIgnore) { continue; }
+          //     if (targetPixel->ignore()) { continue; }
           //     Point targetCoords = targetPixel->coords();
           //     double sampleRadius = targetPixel->sampleRadius();
           //     if (std::abs(targetCoords.x() - x) > sampleRadius) { continue;
@@ -364,7 +364,7 @@ private:
       std::function<bool(std::shared_ptr<LEDPixelT>)> onFind) {
     static std::map<double, double> comparableDistances;
     for (std::shared_ptr<LEDPixelT> targetPixel : mPixels) {
-      if (targetPixel->mIgnore) {
+      if (targetPixel->ignore()) {
         continue;
       }
       Point targetCoords = targetPixel->coords();

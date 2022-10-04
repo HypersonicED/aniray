@@ -31,7 +31,7 @@ public:
     using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
     using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
     for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.pixels()) {
-      if (pixel->mIgnore) {
+      if (pixel->ignore()) {
         continue;
       }
       DMXAddr addr = pixel->addr();

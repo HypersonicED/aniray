@@ -50,7 +50,7 @@ public:
           });
       // for ( std::shared_ptr<LEDPixelT> targetPixel: mTargetLEDPixels.pixels()
       // ) {
-      //     if (targetPixel->mIgnore) { continue; }
+      //     if (targetPixel->ignore()) { continue; }
       //     Point targetCoords = targetPixel->coords();
       //     double sampleRadius = targetPixel->sampleRadius();
       //     if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
@@ -79,7 +79,7 @@ public:
   void sampleAsRGB() {
     using MixColor = color::rgb<double>;
     for (auto const &[targetPixel, sources] : mSamplerMap) {
-      if (targetPixel->mIgnore) {
+      if (targetPixel->ignore()) {
         continue;
       }
       std::vector<double> mixR;
