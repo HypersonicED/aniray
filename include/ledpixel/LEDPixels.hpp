@@ -129,23 +129,23 @@ public:
     }
   }
 
-  auto center() -> Point {
+  auto center() const -> Point {
     return mCenter;
   }
 
-  auto envelope() -> Box {
+  auto envelope() const -> Box {
     return mEnvelope;
   }
 
-  auto hash() -> std::string {
+  auto hash() const -> std::string {
     return mHash;
   }
 
-  auto groups() const -> std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> const & {
+  auto groups() const -> std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> & {
     return mGroups;
   }
 
-  auto pixels() const -> std::vector<std::shared_ptr<LEDPixelT>> const & {
+  auto pixels() const -> std::vector<std::shared_ptr<LEDPixelT>> & {
     return mPixels;
   }
 

@@ -41,22 +41,22 @@ public:
     return out;
   }
 
-  auto coords() -> Point {
+  auto coords() const -> Point {
     return mCoords;
   }
-  auto rot() -> Point {
+  auto rot() const -> Point {
     return mRot;
   }
-  auto addr() -> DMXAddr {
+  auto addr() const -> DMXAddr {
     return mAddr;
   }
-  auto ignore() -> bool {
+  auto ignore() const -> bool {
     return mIgnore;
   }
-  auto sampleRadius() -> double {
+  auto sampleRadius() const -> double {
     return mSampleRadius;
   }
-  auto color() -> ColorT {
+  auto color() const -> ColorT {
     return mColor;
   }
   void color(ColorT newColor) {
