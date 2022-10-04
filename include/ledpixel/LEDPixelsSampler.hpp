@@ -33,13 +33,13 @@ public:
 
   LEDPixelsSampler(LEDPixelsT &targetLEDPixels, LEDPixelsT sourceLEDPixels)
       : mTargetLEDPixels{targetLEDPixels}, mSourceLEDPixels{sourceLEDPixels} {
-    for (std::shared_ptr<LEDPixelT> targetPixel : mTargetLEDPixels.mPixels) {
+    for (std::shared_ptr<LEDPixelT> targetPixel : mTargetLEDPixels.pixels()) {
       mSamplerMap[targetPixel] = std::vector<std::shared_ptr<LEDPixelT>>();
     }
     // std::map<double, double> comparableDistances; //
     // NOLINT(cppcoreguidelines-init-variables)
-    for (std::shared_ptr<LEDPixelT> sourcePixel : mSourceLEDPixels.mPixels) {
-      Point sourceCoords = sourcePixel->mCoords;
+    for (std::shared_ptr<LEDPixelT> sourcePixel : mSourceLEDPixels.pixels()) {
+      Point sourceCoords = sourcePixel->coords();
       // findPixelsInRadiusOfSource(sourceCoords, [&sourcePixel,
       // this](std::shared_ptr<LEDPixelT> targetPixel) -> bool {
       findPixelsInRadiusOfSource(
@@ -48,11 +48,11 @@ public:
             mSamplerMap[targetPixel].push_back(sourcePixel);
             return false;
           });
-      // for ( std::shared_ptr<LEDPixelT> targetPixel: mTargetLEDPixels.mPixels
+      // for ( std::shared_ptr<LEDPixelT> targetPixel: mTargetLEDPixels.pixels()
       // ) {
       //     if (targetPixel->mIgnore) { continue; }
-      //     Point targetCoords = targetPixel->mCoords;
-      //     double sampleRadius = targetPixel->mSampleRadius;
+      //     Point targetCoords = targetPixel->coords();
+      //     double sampleRadius = targetPixel->sampleRadius();
       //     if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
       //     continue; } if (std::abs(targetCoords.y() - sourceCoords.y()) >
       //     sampleRadius) { continue; } if (std::abs(targetCoords.z() -
@@ -87,7 +87,7 @@ public:
       std::vector<double> mixB;
       for (std::shared_ptr<LEDPixelT> sourcePixel : sources) {
         MixColor sourceColor{};
-        sourceColor = sourcePixel->mColor;
+        sourceColor = sourcePixel->color();
         mixR.push_back(sourceColor[0] * sourceColor[0]);
         mixG.push_back(sourceColor[1] * sourceColor[1]);
         mixB.push_back(sourceColor[2] * sourceColor[2]);
@@ -99,7 +99,7 @@ public:
                      static_cast<double>(mixG.size())),
            std::sqrt(std::accumulate(mixB.begin(), mixB.end(), 0.0) /
                      static_cast<double>(mixB.size()))});
-      targetPixel->mColor = targetColor;
+      targetPixel->color(targetColor);
     }
   }
 

@@ -59,8 +59,8 @@ if(NOT LEDPIXEL_WITH_LINT)
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES
-    CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE};-Xiwyu;--cxx17ns")
-    # CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE};-Xiwyu;--cxx17ns"
+    CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
 endif()
 
 target_include_directories(

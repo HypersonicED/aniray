@@ -30,12 +30,12 @@ public:
   auto updateAndSend() -> bool {
     using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
     using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
-    for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.mPixels) {
+    for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.pixels()) {
       if (pixel->mIgnore) {
         continue;
       }
-      DMXAddr addr = pixel->mAddr;
-      ColorT color = pixel->mColor;
+      DMXAddr addr = pixel->addr();
+      ColorT color = pixel->color();
       auto output = ColorToOutput(color);
       for (int i = 0; i < sizeof(output); i++) {
         setChannel(addr.mUniverse, (addr.mAddr - 1) + i, output[i]);

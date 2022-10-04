@@ -27,6 +27,7 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/geometry/algorithms/append.hpp>
@@ -69,7 +70,7 @@ public:
     size_t index = 0;
     for (LEDPixelT pixel : pixels) {
       mPixels.push_back(std::make_shared<LEDPixelT>(pixel));
-      boost::geometry::append(points, pixel.mCoords);
+      boost::geometry::append(points, pixel.coords());
       for (auto const &[groupName, groupIndexes] : groups) {
         if (std::find(groupIndexes.begin(), groupIndexes.end(), index) !=
             groupIndexes.end()) {
@@ -128,6 +129,26 @@ public:
     }
   }
 
+  auto center() -> Point {
+    return mCenter;
+  }
+
+  auto envelope() -> Box {
+    return mEnvelope;
+  }
+
+  auto hash() -> std::string {
+    return mHash;
+  }
+
+  auto groups() const -> std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> const & {
+    return mGroups;
+  }
+
+  auto pixels() const -> std::vector<std::shared_ptr<LEDPixelT>> const & {
+    return mPixels;
+  }
+
   auto pixelGroupsToString(std::shared_ptr<LEDPixelT> pixel,
                            std::string *groupsStr) -> size_t {
     std::ostringstream groups;
@@ -173,14 +194,14 @@ public:
     for (std::shared_ptr<LEDPixelT> pixel : mPixels) {
       std::string pixelGroups;
       size_t groupsCount = pixelGroupsToString(pixel, &pixelGroups);
-      file << pixel->mAddr.mUniverse << "," << int(pixel->mAddr.mAddr);
-      file << "," << std::to_string(pixel->mCoords.x()) << ","
-           << std::to_string(pixel->mCoords.z() * -1) << ","
+      file << pixel->addr().mUniverse << "," << int(pixel->addr().mAddr);
+      file << "," << std::to_string(pixel->coords().x()) << ","
+           << std::to_string(pixel->coords().z() * -1) << ","
            << std::to_string(
-                  pixel->mCoords.y()); // Real world z is up, in sim y is up
-      file << "," << std::to_string(pixel->mRot.z() * -1) << ","
-           << std::to_string(pixel->mRot.y() * -1) << ","
-           << std::to_string(pixel->mRot.x() * -1);
+                  pixel->coords().y()); // Real world z is up, in sim y is up
+      file << "," << std::to_string(pixel->rot().z() * -1) << ","
+           << std::to_string(pixel->rot().y() * -1) << ","
+           << std::to_string(pixel->rot().x() * -1);
       file << "," << std::boolalpha << pixel->mIgnore;
       if (groupsCount >= 2) {
         file << ",\"";
@@ -307,8 +328,8 @@ private:
           // for ( std::shared_ptr<LEDPixelT> targetPixel:
           // targetLEDPixels.mPixels ) {
           //     if (targetPixel->mIgnore) { continue; }
-          //     Point targetCoords = targetPixel->mCoords;
-          //     double sampleRadius = targetPixel->mSampleRadius;
+          //     Point targetCoords = targetPixel->coords();
+          //     double sampleRadius = targetPixel->sampleRadius();
           //     if (std::abs(targetCoords.x() - x) > sampleRadius) { continue;
           //     } if (std::abs(targetCoords.y() - y) > sampleRadius) {
           //     continue; } if (std::abs(targetCoords.z() - z) > sampleRadius)
@@ -346,8 +367,8 @@ private:
       if (targetPixel->mIgnore) {
         continue;
       }
-      Point targetCoords = targetPixel->mCoords;
-      double sampleRadius = targetPixel->mSampleRadius;
+      Point targetCoords = targetPixel->coords();
+      double sampleRadius = targetPixel->sampleRadius();
       if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
         continue;
       }

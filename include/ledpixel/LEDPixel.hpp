@@ -41,6 +41,28 @@ public:
     return out;
   }
 
+  auto coords() -> Point {
+    return mCoords;
+  }
+  auto rot() -> Point {
+    return mRot;
+  }
+  auto addr() -> DMXAddr {
+    return mAddr;
+  }
+  auto ignore() -> bool {
+    return mIgnore;
+  }
+  auto sampleRadius() -> double {
+    return mSampleRadius;
+  }
+  auto color() -> ColorT {
+    return mColor;
+  }
+  void color(ColorT newColor) {
+    mColor = newColor;
+  }
+
 private:
   Point mCoords;
   Point mRot;
