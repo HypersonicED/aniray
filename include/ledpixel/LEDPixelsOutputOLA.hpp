@@ -49,7 +49,7 @@ public:
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
     for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.pixels()) {
-      DMXAddr addr = pixel->mAddr;
+      DMXAddr addr = pixel->addr();
       if (mUniversesToBuffers.count(addr.mUniverse) < 1) {
         mBuffers.emplace_back();
         size_t i = mBuffers.size() - 1;
