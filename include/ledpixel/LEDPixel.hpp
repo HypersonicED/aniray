@@ -13,16 +13,12 @@
 
 #include <ostream>
 
-#include <boost/geometry/geometries/point_xyz.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
 
 #include <ledpixel/DMXAddr.hpp>
+#include <ledpixel/Geometry.hpp>
 
 namespace ledpixel {
-
-using Point =
-    boost::geometry::model::d3::point_xyz<double,
-                                          boost::geometry::cs::cartesian>;
 
 template <class ColorT> class LEDPixel {
 public:

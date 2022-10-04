@@ -11,11 +11,15 @@
 #ifndef LEDPIXEL_LEDPIXELSOUTPUT_HPP
 #define LEDPIXEL_LEDPIXELSOUTPUT_HPP
 
+#include <cstdint>
 #include <memory>
 
 #include <ledpixel/DMXAddr.hpp>
 
 namespace ledpixel {
+
+using std::uint32_t;
+using std::uint8_t;
 
 template <typename LEDPixelsT, auto ColorToOutput> class LEDPixelsOutput {
 public:

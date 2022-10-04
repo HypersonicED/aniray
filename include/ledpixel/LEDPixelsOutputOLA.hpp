@@ -11,19 +11,30 @@
 #ifndef LEDPIXEL_LEDPIXELSOUTPUTOLA_HPP
 #define LEDPIXEL_LEDPIXELSOUTPUTOLA_HPP
 
-#include <map>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
+#include <boost/log/core/record.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/preprocessor/seq/enum.hpp>
+#include <boost/preprocessor/seq/size.hpp>
 #include <ola/DmxBuffer.h>
 #include <ola/Logging.h>
 #include <ola/client/StreamingClient.h>
 
 #include <ledpixel/DMXAddr.hpp>
+#include <ledpixel/LEDPixelsOutput.hpp>
 
 namespace ledpixel {
+
+using std::size_t;
+using std::uint8_t;
+using std::uint8_t;
 
 template <typename LEDPixelsT, auto ColorToOutput>
 class LEDPixelsOutputOLA : LEDPixelsOutput<LEDPixelsT, ColorToOutput> {
@@ -32,9 +43,7 @@ public:
   using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::updateAndSend;
   using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::mLEDPixels;
 
-  LEDPixelsOutputOLA(
-      LEDPixelsT &
-          ledPixels) // NOLINT(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
+  LEDPixelsOutputOLA( LEDPixelsT & ledPixels)
       : LEDPixelsOutput<LEDPixelsT, ColorToOutput>::LEDPixelsOutput(ledPixels) {
     using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);

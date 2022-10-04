@@ -6,16 +6,15 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
     CACHE BOOL "Export all symbols")
 
 option(LEDPIXEL_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
+option(LEDPIXEL_WITH_LINT "Run clang-tidy" NO)
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(Boost 1.74.0 REQUIRED COMPONENTS log)
 find_package(OpenSSL 1.1.0 REQUIRED)
-# find_package(Catch2 REQUIRED)
 
 find_program(IWYU_EXE NAMES include-what-you-use iwyu REQUIRED)
 find_program(CLANG_TIDY_EXE NAMES "clang-tidy" "clang-tidy-13" "clang-tidy-12"
                                   "clang-tidy-11" REQUIRED)
-# add_subdirectory(lib/Format.cmake)
 
 if(NOT LEDPIXEL_WITHOUT_OLA)
   find_package(PkgConfig)
@@ -25,26 +24,44 @@ endif()
 add_library(
   ${CMAKE_PROJECT_NAME}
   include/ledpixel/DMXAddr.hpp
+  include/ledpixel/Geometry.hpp
   include/ledpixel/LEDPixel.hpp
   include/ledpixel/LEDPixelAnimation.hpp
   include/ledpixel/LEDPixels.hpp
   include/ledpixel/LEDPixelsOutput.hpp
   include/ledpixel/LEDPixelsSampler.hpp
-  src/DMXAddr.cpp
-  src/LEDPixel.cpp
-  src/lintHelper.cpp)
-if(NOT LEDPIXEL_WITHOUT_OLA)
-  # Private to avoid double linking https://stackoverflow.com/a/34533415
-  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/ledpixel/LEDPixelsOutputOLA.hpp)
-endif()
+  src/DMXAddr.cpp)
+
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror)
 set_target_properties(
   ${CMAKE_PROJECT_NAME}
-  PROPERTIES LINKER_LANGUAGE CXX
-             # CXX_EXTENSIONS OFF
-            #  CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE}" "-Xiwyu" "--cxx17ns"
-             CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+  PROPERTIES LINKER_LANGUAGE CXX)
+              # CXX_EXTENSIONS OFF)
+
+if(NOT LEDPIXEL_WITHOUT_OLA)
+  # Private to avoid double linking https://stackoverflow.com/a/34533415
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/ledpixel/LEDPixelsOutputOLA.hpp)
+endif()
+
+if(NOT LEDPIXEL_WITH_LINT)
+  # Private to avoid double linking https://stackoverflow.com/a/34533415
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  src/lintHelpers/Geometry.cpp
+  src/lintHelpers/LEDPixel.cpp
+  src/lintHelpers/LEDPixelAnimation.cpp
+  src/lintHelpers/LEDPixels.cpp
+  src/lintHelpers/LEDPixelsOutput.cpp
+  src/lintHelpers/LEDPixelsSampler.cpp)
+  if(NOT LEDPIXEL_WITHOUT_OLA)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/LEDPixelsOutputOLA.cpp)
+  endif()
+  set_target_properties(
+    ${CMAKE_PROJECT_NAME}
+    PROPERTIES
+    CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE};-Xiwyu;--cxx17ns")
+    # CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+endif()
 
 target_include_directories(
   ${CMAKE_PROJECT_NAME}
@@ -60,13 +77,3 @@ install(
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin)
-
-
-
-# add_executable(tests test/main.cpp test/test_DMXAddr.cpp )
-# set_target_properties( tests PROPERTIES LINKER_LANGUAGE CXX CXX_EXTENSIONS
-# OFF) # CXX_CLANG_TIDY
-# "${CLANG_TIDY_EXE};-header-filter=.*;-checks=*;-warnings-as-errors=*")
-# target_include_directories(tests PUBLIC test/) target_link_libraries(tests
-# ${Cath2_LIBRARIES} ${CMAKE_PROJECT_NAME} ) include(Catch)
-# catch_discover_tests(tests) install( TARGETS tests RUNTIME DESTINATION bin )

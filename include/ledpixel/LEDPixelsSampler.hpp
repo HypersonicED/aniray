@@ -17,11 +17,12 @@
 #include <numeric>
 #include <vector>
 
-#include <boost/geometry/algorithms/comparable_distance.hpp>
+#include "color/color.hpp" // IWYU pragma: keep
+// IWYU pragma: no_include "color/_internal/proxy.hpp"
+// IWYU pragma: no_include "color/generic/model.hpp"
+// IWYU pragma: no_include "color/rgb/rgb.hpp"
 
-#include "color/color.hpp"
-
-#include <ledpixel/LEDPixel.hpp>
+#include <ledpixel/Geometry.hpp>
 
 namespace ledpixel {
 

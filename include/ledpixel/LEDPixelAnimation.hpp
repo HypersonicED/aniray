@@ -11,11 +11,19 @@
 #ifndef LEDPIXEL_LEDPIXELANIMATION_HPP
 #define LEDPIXEL_LEDPIXELANIMATION_HPP
 
+#include <cstddef>
 #include <limits>
+#include <typeinfo>
 
+#include <boost/log/core/record.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/preprocessor/seq/enum.hpp>
+#include <boost/preprocessor/seq/size.hpp>
 
 namespace ledpixel {
+
+using std::size_t;
 
 template <typename LEDPixelsT> class LEDPixelAnimation {
 public:

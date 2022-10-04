@@ -13,7 +13,8 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -21,32 +22,38 @@
 #include <ios>
 #include <map>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <vector>
-
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/centroid.hpp>
-#include <boost/geometry/algorithms/comparable_distance.hpp>
-#include <boost/geometry/algorithms/envelope.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/multi/geometries/multi_point.hpp>
+#include <boost/geometry/algorithms/comparable_distance.hpp> // IWYU pragma: keep
+#include <boost/geometry/algorithms/detail/comparable_distance/interface.hpp>
+#include <boost/geometry/algorithms/detail/envelope/interface.hpp>
+#include <boost/geometry/algorithms/envelope.hpp> // IWYU pragma: keep
+#include <boost/geometry/algorithms/transform.hpp>
+#include <boost/geometry/io/dsv/write.hpp>
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
+#include <boost/log/core/record.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/preprocessor/seq/enum.hpp>
+#include <boost/preprocessor/seq/size.hpp>
 #include <openssl/evp.h>
+#include <openssl/ossl_typ.h>
 
 #include "csv.h"
 
-#include <ledpixel/LEDPixel.hpp>
+#include <ledpixel/DMXAddr.hpp>
+#include <ledpixel/Geometry.hpp>
 
 namespace ledpixel {
 
-using MultiPoint = boost::geometry::model::multi_point<Point>;
-using Box = boost::geometry::model::box<Point>;
+using std::size_t;
 using std::uint8_t;
 
 const size_t LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS = 10;
