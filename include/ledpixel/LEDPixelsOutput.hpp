@@ -44,6 +44,10 @@ public:
     return sendData();
   }
 
+  auto ledPixels() const -> LEDPixelsT & {
+    return mLEDPixels;
+  }
+
 protected:
   virtual void setChannel(uint32_t universe, uint8_t channel, uint8_t data) {}
   virtual auto sendData() -> bool { return false; }

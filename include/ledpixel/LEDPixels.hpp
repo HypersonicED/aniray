@@ -17,7 +17,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <ios>
 #include <map>
@@ -38,6 +37,7 @@
 #include <boost/geometry/algorithms/envelope.hpp> // IWYU pragma: keep
 #include <boost/geometry/algorithms/transform.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
+#include <boost/geometry/strategies/cartesian/centroid_average.hpp> // IWYU pragma: keep
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
 #include <boost/log/core/record.hpp>
 #include <boost/log/sources/record_ostream.hpp>
@@ -57,7 +57,7 @@ namespace ledpixel {
 using std::size_t;
 using std::uint8_t;
 
-const size_t LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS = 10;
+const size_t LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS = 11;
 
 template <typename LEDPixelT> class LEDPixels {
 public:
@@ -129,23 +129,23 @@ public:
     }
   }
 
-  auto center() const -> Point {
+  [[nodiscard]] auto center() const -> Point {
     return mCenter;
   }
 
-  auto envelope() const -> Box {
+  [[nodiscard]] auto envelope() const -> Box {
     return mEnvelope;
   }
 
-  auto hash() const -> std::string {
+  [[nodiscard]] auto hash() const -> std::string {
     return mHash;
   }
 
-  auto groups() const -> std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> & {
+  auto groups() -> std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> & {
     return mGroups;
   }
 
-  auto pixels() const -> std::vector<std::shared_ptr<LEDPixelT>> & {
+  auto pixels() -> std::vector<std::shared_ptr<LEDPixelT>> & {
     return mPixels;
   }
 
@@ -165,7 +165,7 @@ public:
     *groupsStr = groups.str();
     return count;
   }
-  friend auto operator<<(std::ostream &out, const LEDPixels<LEDPixelT> &L)
+  friend auto operator<<(std::ostream &out, LEDPixels<LEDPixelT> &L)
       -> std::ostream & {
     out << "center: " << boost::geometry::dsv(L.mCenter);
     out << " envelope: " << boost::geometry::dsv(L.mEnvelope);
@@ -179,7 +179,7 @@ public:
     out << ")";
     return out;
   }
-  void pixelsToCSV(const std::string &filename) const {
+  void pixelsToCSV(const std::string &filename) {
     std::ofstream file(filename);
     file << "universe"
          << ",startAddr"
@@ -190,6 +190,7 @@ public:
          << ",yDeg"
          << ",zDeg"
          << ",ignore"
+         << ",sampleRadius"
          << ",groups" << std::endl;
     for (std::shared_ptr<LEDPixelT> pixel : mPixels) {
       std::string pixelGroups;
@@ -203,6 +204,7 @@ public:
            << std::to_string(pixel->rot().y() * -1) << ","
            << std::to_string(pixel->rot().x() * -1);
       file << "," << std::boolalpha << pixel->ignore();
+      file << "," << std::to_string(pixel->sampleRadius());
       if (groupsCount >= 2) {
         file << ",\"";
       } else {
@@ -217,151 +219,8 @@ public:
     file.close();
   }
 
-private:
-  std::vector<std::shared_ptr<LEDPixelT>> mPixels;
-  Point mCenter;
-  Box mEnvelope;
-  std::string mHash;
-  std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> mGroups;
-
-  static auto getCacheName(double spacing, const std::string &targetHash)
-      -> std::string {
-    std::ostringstream cacheName;
-    cacheName << "cache_pixelGrid_spacing_" << std::to_string(spacing)
-              << "_from_" << targetHash << ".csv";
-    return cacheName.str();
-  }
-  auto pixelsFromCSV(const std::string &filename) const
-      -> std::tuple<std::vector<LEDPixelT>,
-                    std::map<std::string, std::vector<size_t>>> {
-    std::vector<LEDPixelT> ledPixels;
-    io::CSVReader<LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS,
-                  io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>>
-        in(filename);
-    in.read_header(io::ignore_extra_column, "universe", "startAddr", "x", "y",
-                   "z", "xDeg", "yDeg", "zDeg", "ignore", "groups");
-    uint32_t universe = 0;
-    uint8_t startAddr = 0;
-    double x = 0;
-    double y = 0;
-    double z = 0;
-    double xDeg = 0;
-    double yDeg = 0;
-    double zDeg = 0;
-    std::string ignoreStr;
-    std::string groupsStr;
-    bool ignore = false;
-    std::map<std::string, std::vector<size_t>> groups;
-    size_t index = 0;
-    // Real world z is up, in sim y is up
-    while (in.read_row(universe, startAddr, x, z, y, xDeg, zDeg, yDeg,
-                       ignoreStr, groupsStr)) {
-      boost::algorithm::trim(ignoreStr);
-      boost::algorithm::to_lower(ignoreStr);
-      DMXAddr addr{universe, startAddr};
-      if (ignoreStr == "true") {
-        ignore = true;
-      } else if (ignoreStr == "false") {
-        ignore = false;
-      } else {
-        ignore = true;
-        BOOST_LOG_TRIVIAL(warning)
-            << "LEDPixels: Unknown ignore bool value for pixel {" << addr
-            << "}, ignoring pixel";
-      }
-      std::stringstream groupsStream;
-      groupsStream << groupsStr;
-      while (groupsStream.good()) {
-        std::string group;
-        std::getline(groupsStream, group, ',');
-        if (!group.empty()) {
-          groups[group].push_back(index);
-        }
-      }
-      ledPixels.push_back(LEDPixelT(Point(x, y, z * -1),
-                                    Point(zDeg * -1, yDeg * -1, xDeg * -1),
-                                    addr, ignore, 1.0F));
-      index++;
-    }
-    return std::make_tuple(ledPixels, groups);
-  }
-  auto pixelGridFromTargetSpacing(LEDPixels &targetLEDPixels, bool useCache,
-                                  double spacing) const
-      -> std::vector<LEDPixelT> {
-    if (useCache) {
-      std::string cacheName = getCacheName(spacing, targetLEDPixels.mHash);
-      if (std::filesystem::exists(cacheName)) {
-        return std::get<0>(pixelsFromCSV(cacheName));
-      }
-    }
-    Box targetEnvelope = targetLEDPixels.mEnvelope;
-    Point targetMin = targetEnvelope.min_corner();
-    Point targetMax = targetEnvelope.max_corner();
-    boost::geometry::strategy::transform::translate_transformer<double, 3, 3>
-        gridStartTranslation(spacing * -1, spacing * -1, spacing * -1);
-    Point gridStart;
-    boost::geometry::transform(targetMin, gridStart, gridStartTranslation);
-    boost::geometry::strategy::transform::translate_transformer<double, 3, 3>
-        gridEndTranslation(spacing, spacing, spacing);
-    Point gridEnd;
-    boost::geometry::transform(targetMax, gridEnd, gridEndTranslation);
-    size_t numX =
-        static_cast<size_t>((gridEnd.x() - gridStart.x()) / spacing) + 1;
-    size_t numY =
-        static_cast<size_t>((gridEnd.y() - gridStart.y()) / spacing) + 1;
-    size_t numZ =
-        static_cast<size_t>((gridEnd.z() - gridStart.z()) / spacing) + 1;
-    std::vector<LEDPixelT> ledPixels;
-    // std::map<double, double> comparableDistances;
-    for (size_t i = 0; i < numX; i++) {
-      for (size_t j = 0; j < numY; j++) {
-        for (size_t k = 0; k < numZ; k++) {
-          double x = static_cast<double>(i) * spacing + gridStart.x();
-          double y = static_cast<double>(j) * spacing + gridStart.y();
-          double z = static_cast<double>(k) * spacing + gridStart.z();
-          Point newPoint(x, y, z);
-          findPixelsInRadiusOfSource(
-              newPoint, [&newPoint, &ledPixels]() -> bool {
-                ledPixels.push_back(LEDPixelT(newPoint, Point(0, 0, 0)));
-                return true;
-              });
-          // for ( std::shared_ptr<LEDPixelT> targetPixel:
-          // targetLEDPixels.mPixels ) {
-          //     if (targetPixel->ignore()) { continue; }
-          //     Point targetCoords = targetPixel->coords();
-          //     double sampleRadius = targetPixel->sampleRadius();
-          //     if (std::abs(targetCoords.x() - x) > sampleRadius) { continue;
-          //     } if (std::abs(targetCoords.y() - y) > sampleRadius) {
-          //     continue; } if (std::abs(targetCoords.z() - z) > sampleRadius)
-          //     { continue; } if (comparableDistances.count(sampleRadius) <= 0)
-          //     {
-          //         comparableDistances[sampleRadius] =
-          //         boost::geometry::comparable_distance(
-          //             Point(targetCoords.x() - sampleRadius,
-          //             targetCoords.y(), targetCoords.z()), targetCoords
-          //         );
-          //     }
-          //     double compare = comparableDistances[sampleRadius];
-          //     double distance =
-          //     boost::geometry::comparable_distance(newPoint, targetCoords);
-          //     if (distance > compare) {
-          //         continue;
-          //     }
-          //     ledPixels.push_back(LEDPixelT(
-          //         newPoint,
-          //         Point(0,0,0)
-          //     ));
-          //     break;
-          // }
-        }
-      }
-    }
-    return ledPixels;
-  }
-
-  void findPixelsInRadiusOfSource(
-      Point sourceCoords,
-      std::function<bool(std::shared_ptr<LEDPixelT>)> onFind) {
+  template <typename onFindFunc> void findPixelsInRadiusOfSource(
+      Point sourceCoords, onFindFunc&& onFind) {
     static std::map<double, double> comparableDistances;
     for (std::shared_ptr<LEDPixelT> targetPixel : mPixels) {
       if (targetPixel->ignore()) {
@@ -397,6 +256,120 @@ private:
         break;
       }
     }
+  }
+
+private:
+  std::vector<std::shared_ptr<LEDPixelT>> mPixels;
+  Point mCenter;
+  Box mEnvelope;
+  std::string mHash;
+  std::map<std::string, std::vector<std::shared_ptr<LEDPixelT>>> mGroups;
+
+  static auto getCacheName(double spacing, const std::string &targetHash)
+      -> std::string {
+    std::ostringstream cacheName;
+    cacheName << "cache_pixelGrid_spacing_" << std::to_string(spacing)
+              << "_from_" << targetHash << ".csv";
+    return cacheName.str();
+  }
+  auto pixelsFromCSV(const std::string &filename) const
+      -> std::tuple<std::vector<LEDPixelT>,
+                    std::map<std::string, std::vector<size_t>>> {
+    std::vector<LEDPixelT> ledPixels;
+    io::CSVReader<LEDPIXELS_PIXEL_FROM_CSV_NUM_COLUMNS,
+                  io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>>
+        in(filename);
+    in.read_header(io::ignore_extra_column, "universe", "startAddr", "x", "y",
+                   "z", "xDeg", "yDeg", "zDeg", "ignore", "sampleRadius", "groups");
+    uint32_t universe = 0;
+    uint8_t startAddr = 0;
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    double xDeg = 0;
+    double yDeg = 0;
+    double zDeg = 0;
+    std::string ignoreStr;
+    std::string groupsStr;
+    bool ignore = false;
+    double sampleRadius = 0;
+    std::map<std::string, std::vector<size_t>> groups;
+    size_t index = 0;
+    // Real world z is up, in sim y is up
+    while (in.read_row(universe, startAddr, x, z, y, xDeg, zDeg, yDeg,
+                       ignoreStr, sampleRadius, groupsStr)) {
+      boost::algorithm::trim(ignoreStr);
+      boost::algorithm::to_lower(ignoreStr);
+      DMXAddr addr{universe, startAddr};
+      if (ignoreStr == "true") {
+        ignore = true;
+      } else if (ignoreStr == "false") {
+        ignore = false;
+      } else {
+        ignore = true;
+        BOOST_LOG_TRIVIAL(warning)
+            << "LEDPixels: Unknown ignore bool value for pixel {" << addr
+            << "}, ignoring pixel";
+      }
+      std::stringstream groupsStream;
+      groupsStream << groupsStr;
+      while (groupsStream.good()) {
+        std::string group;
+        std::getline(groupsStream, group, ',');
+        if (!group.empty()) {
+          groups[group].push_back(index);
+        }
+      }
+      ledPixels.push_back(LEDPixelT(Point(x, y, z * -1),
+                                    Point(zDeg * -1, yDeg * -1, xDeg * -1),
+                                    addr, ignore, sampleRadius));
+      index++;
+    }
+    return std::make_tuple(ledPixels, groups);
+  }
+  auto pixelGridFromTargetSpacing(LEDPixels &targetLEDPixels, bool useCache,
+                                  double spacing)
+      -> std::vector<LEDPixelT> {
+    if (useCache) {
+      std::string cacheName = getCacheName(spacing, targetLEDPixels.mHash);
+      if (std::filesystem::exists(cacheName)) {
+        return std::get<0>(pixelsFromCSV(cacheName));
+      }
+    }
+    Box targetEnvelope = targetLEDPixels.mEnvelope;
+    Point targetMin = targetEnvelope.min_corner();
+    Point targetMax = targetEnvelope.max_corner();
+    boost::geometry::strategy::transform::translate_transformer<double, 3, 3>
+        gridStartTranslation(spacing * -1, spacing * -1, spacing * -1);
+    Point gridStart;
+    boost::geometry::transform(targetMin, gridStart, gridStartTranslation);
+    boost::geometry::strategy::transform::translate_transformer<double, 3, 3>
+        gridEndTranslation(spacing, spacing, spacing);
+    Point gridEnd;
+    boost::geometry::transform(targetMax, gridEnd, gridEndTranslation);
+    size_t numX =
+        static_cast<size_t>((gridEnd.x() - gridStart.x()) / spacing) + 1;
+    size_t numY =
+        static_cast<size_t>((gridEnd.y() - gridStart.y()) / spacing) + 1;
+    size_t numZ =
+        static_cast<size_t>((gridEnd.z() - gridStart.z()) / spacing) + 1;
+    std::vector<LEDPixelT> ledPixels;
+    for (size_t i = 0; i < numX; i++) {
+      for (size_t j = 0; j < numY; j++) {
+        for (size_t k = 0; k < numZ; k++) {
+          double x = static_cast<double>(i) * spacing + gridStart.x();
+          double y = static_cast<double>(j) * spacing + gridStart.y();
+          double z = static_cast<double>(k) * spacing + gridStart.z();
+          Point newPoint(x, y, z);
+          targetLEDPixels.findPixelsInRadiusOfSource(
+              newPoint, [newPoint, &ledPixels](std::shared_ptr<LEDPixelT> targetPixel) mutable -> bool { // NOLINT(misc-unused-parameters)
+                ledPixels.push_back(LEDPixelT(newPoint, Point(0, 0, 0)));
+                return true;
+              });
+        }
+      }
+    }
+    return ledPixels;
   }
 };
 

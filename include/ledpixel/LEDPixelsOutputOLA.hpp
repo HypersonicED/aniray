@@ -41,14 +41,14 @@ class LEDPixelsOutputOLA : LEDPixelsOutput<LEDPixelsT, ColorToOutput> {
 public:
   using InnerLEDPixelsT = LEDPixelsT;
   using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::updateAndSend;
-  using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::mLEDPixels;
+  using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::ledPixels;
 
   LEDPixelsOutputOLA( LEDPixelsT & ledPixels)
       : LEDPixelsOutput<LEDPixelsT, ColorToOutput>::LEDPixelsOutput(ledPixels) {
     using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
-    for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.pixels()) {
+    for (std::shared_ptr<LEDPixelT> pixel : LEDPixelsOutput<LEDPixelsT, ColorToOutput>::ledPixels().pixels()) {
       DMXAddr addr = pixel->addr();
       if (mUniversesToBuffers.count(addr.mUniverse) < 1) {
         mBuffers.emplace_back();
@@ -63,8 +63,7 @@ public:
     ola::client::StreamingClient::Options olaClientOptions =
         ola::client::StreamingClient::Options();
     olaClientOptions.auto_start = false;
-    mOLAClient = std::make_unique<ola::client::StreamingClient>(
-        ola::client::StreamingClient(olaClientOptions));
+    mOLAClient = std::make_unique<ola::client::StreamingClient>(olaClientOptions);
     if (!mOLAClient->Setup()) {
       throw std::runtime_error("LEDPixelsOutputOLA: Error setting up OLA!");
     }

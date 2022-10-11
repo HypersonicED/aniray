@@ -30,49 +30,22 @@ template <typename LEDPixelsT> class LEDPixelsSampler {
 public:
   using InnerLEDPixelsT = LEDPixelsT;
   using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
+  using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
 
   LEDPixelsSampler(LEDPixelsT &targetLEDPixels, LEDPixelsT sourceLEDPixels)
       : mTargetLEDPixels{targetLEDPixels}, mSourceLEDPixels{sourceLEDPixels} {
     for (std::shared_ptr<LEDPixelT> targetPixel : mTargetLEDPixels.pixels()) {
       mSamplerMap[targetPixel] = std::vector<std::shared_ptr<LEDPixelT>>();
     }
-    // std::map<double, double> comparableDistances; //
     // NOLINT(cppcoreguidelines-init-variables)
     for (std::shared_ptr<LEDPixelT> sourcePixel : mSourceLEDPixels.pixels()) {
       Point sourceCoords = sourcePixel->coords();
-      // findPixelsInRadiusOfSource(sourceCoords, [&sourcePixel,
-      // this](std::shared_ptr<LEDPixelT> targetPixel) -> bool {
-      findPixelsInRadiusOfSource(
+      mTargetLEDPixels.findPixelsInRadiusOfSource(
           sourceCoords,
-          [&sourcePixel, this](std::shared_ptr<LEDPixelT> targetPixel) -> bool {
+          [&sourcePixel, this](const std::shared_ptr<LEDPixelT> targetPixel) -> bool {
             mSamplerMap[targetPixel].push_back(sourcePixel);
             return false;
           });
-      // for ( std::shared_ptr<LEDPixelT> targetPixel: mTargetLEDPixels.pixels()
-      // ) {
-      //     if (targetPixel->ignore()) { continue; }
-      //     Point targetCoords = targetPixel->coords();
-      //     double sampleRadius = targetPixel->sampleRadius();
-      //     if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
-      //     continue; } if (std::abs(targetCoords.y() - sourceCoords.y()) >
-      //     sampleRadius) { continue; } if (std::abs(targetCoords.z() -
-      //     sourceCoords.z()) > sampleRadius) { continue; } if
-      //     (comparableDistances.count(sampleRadius) <= 0) {
-      //         comparableDistances[sampleRadius] =
-      //         boost::geometry::comparable_distance(
-      //             Point(targetCoords.x() - sampleRadius, targetCoords.y(),
-      //             targetCoords.z()), targetCoords
-      //         );
-      //     }
-      //     double compare = 0;
-      //     compare = comparableDistances[sampleRadius];
-      //     double distance =
-      //     boost::geometry::comparable_distance(sourceCoords, targetCoords);
-      //     if (distance > compare) {
-      //         continue;
-      //     }
-      //     mSamplerMap[targetPixel].push_back(sourcePixel);
-      // }
     }
   }
 
@@ -99,7 +72,7 @@ public:
                      static_cast<double>(mixG.size())),
            std::sqrt(std::accumulate(mixB.begin(), mixB.end(), 0.0) /
                      static_cast<double>(mixB.size()))});
-      targetPixel->color(targetColor);
+      targetPixel->color(static_cast<ColorT>(targetColor));
     }
   }
 

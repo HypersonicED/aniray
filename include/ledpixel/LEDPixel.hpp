@@ -41,19 +41,19 @@ public:
     return out;
   }
 
-  auto coords() const -> Point {
+  [[nodiscard]] auto coords() const -> Point {
     return mCoords;
   }
-  auto rot() const -> Point {
+  [[nodiscard]] auto rot() const -> Point {
     return mRot;
   }
-  auto addr() const -> DMXAddr {
+  [[nodiscard]] auto addr() const -> DMXAddr {
     return mAddr;
   }
-  auto ignore() const -> bool {
+  [[nodiscard]] auto ignore() const -> bool {
     return mIgnore;
   }
-  auto sampleRadius() const -> double {
+  [[nodiscard]] auto sampleRadius() const -> double {
     return mSampleRadius;
   }
   auto color() const -> ColorT {
