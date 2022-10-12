@@ -1,4 +1,4 @@
-/* LEDPixelsOutput.hpp: Headers for LED Pixel systems
+/* LEDPixelsOutput.hpp: Headers for Aniray system outputs
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,29 +8,29 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_LEDPIXELSOUTPUT_HPP
-#define LEDPIXEL_LEDPIXELSOUTPUT_HPP
+#ifndef ANIRAY_NODESOUTPUT_HPP
+#define ANIRAY_NODESOUTPUT_HPP
 
 #include <cstdint>
 #include <memory>
 
-#include <ledpixel/DMXAddr.hpp>
+#include <aniray/DMXAddr.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
 using std::uint32_t;
 using std::uint8_t;
 
-template <typename LEDPixelsT, auto ColorToOutput> class LEDPixelsOutput {
+template <typename NodesT, auto ColorToOutput> class NodesOutput {
 public:
-  using InnerLEDPixelsT = LEDPixelsT;
+  using InnerNodesT = NodesT;
 
-  LEDPixelsOutput(LEDPixelsT &ledPixels) : mLEDPixels{ledPixels} {}
+  NodesOutput(NodesT &ledPixels) : mLEDPixels{ledPixels} {}
 
   auto updateAndSend() -> bool {
-    using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
-    using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
-    for (std::shared_ptr<LEDPixelT> pixel : mLEDPixels.pixels()) {
+    using NodeT = typename InnerNodesT::InnerNodeT;
+    using ColorT = typename InnerNodesT::InnerNodeT::InnerColorT;
+    for (std::shared_ptr<NodeT> pixel : mLEDPixels.pixels()) {
       if (pixel->ignore()) {
         continue;
       }
@@ -44,7 +44,7 @@ public:
     return sendData();
   }
 
-  auto ledPixels() const -> LEDPixelsT & {
+  auto ledPixels() const -> NodesT & {
     return mLEDPixels;
   }
 
@@ -53,9 +53,9 @@ protected:
   virtual auto sendData() -> bool { return false; }
 
 private:
-  LEDPixelsT &mLEDPixels;
+  NodesT &mLEDPixels;
 };
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_LEDPIXELSOUTPUT_HPP
+#endif // ANIRAY_NODESOUTPUT_HPP

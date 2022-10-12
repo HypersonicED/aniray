@@ -1,13 +1,14 @@
-ledpixel
-========
-A library for orchestrating, running, and animating large LED lighting installations.
+aniray
+======
+A library for animating and orchestrating large arrays of emitters, actuators, displays, and more.
 
 ## Features
 
-- Automatic subsampling pixel generation and caching
-- Load pixel physical data from CSV
+- Automatic subsampling node grid generation and caching
+- Load node physical data from CSV
 - Visualization framework independent (can be used with Cinder, oFx, etc.)
 - Open Lighting Architecture (OLA) for lighting output allowing for robust many universe outputs of E1.31 (sACN), Artnet, KiNET, USB DMX adapters, and more.
+- Extensible output classes for other output methods
 
 ## Requirements
 
@@ -15,23 +16,23 @@ A library for orchestrating, running, and animating large LED lighting installat
 - clang or gcc, untested on other platforms
 - Boost >= 1.74.0 (Boost Software License)
 - OpenSSL >= 1.1.0 (OpenSSL License)
-- libola >= 0.10.8 or turn off with `-DLEDPIXEL_WITHOUT_OLA=ON` and bring your own output (LGPL)
+- libola >= 0.10.8 (LGPL) or turn off with `-DANIRAY_WITHOUT_OLA=ON` and bring your own output
 - Bundled requirements (Git submodules):
   - [dmilos/color](https://github.com/dmilos/color) (Apache-2.0 License)
   - [ben-strasser/fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser) (BSD-3-Clause License)
 
-## Build Requirements
+## Build and Lint Requirements
 
 - CMake
-- `iwyu` (include-what-you-use)
-- `clang-tidy`
+- `iwyu` (include-what-you-use) with `-DANIRAY_WITH_LINT_=ON`
+- `clang-tidy` with `-DANIRAY_WITH_LINT_=ON`
 
 ## Using
 
 1. Install required dependencies above
 2. Clone with submodules
    ```bash
-   git clone --recursive https://github.com/HypersonicED/ledpixel.git
+   git clone --recursive https://github.com/HypersonicED/aniray.git
    ```
 3. Either
    - Add to your `CMakeLists.txt`

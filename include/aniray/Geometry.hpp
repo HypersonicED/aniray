@@ -1,4 +1,4 @@
-/* Geometry.hpp: Headers for LED Pixel systems
+/* Geometry.hpp: Headers for geometry for Aniray systems
  *
  * Created by Perry Naseck on 2022-10-03.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_GEOMETRY_HPP
-#define LEDPIXEL_GEOMETRY_HPP
+#ifndef ANIRAY_GEOMETRY_HPP
+#define ANIRAY_GEOMETRY_HPP
 
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -17,7 +17,7 @@
 #include <boost/geometry/geometries/point_xyz.hpp>
 // IWYU pragma: no_forward_declare boost::geometry::cs::cartesian
 
-namespace ledpixel {
+namespace aniray {
 
 using Point =
     boost::geometry::model::d3::point_xyz<double,
@@ -25,6 +25,6 @@ using Point =
 using MultiPoint = boost::geometry::model::multi_point<Point>;
 using Box = boost::geometry::model::box<Point>;
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_GEOMETRY_HPP
+#endif // ANIRAY_GEOMETRY_HPP

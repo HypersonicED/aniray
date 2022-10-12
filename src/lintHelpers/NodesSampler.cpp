@@ -1,4 +1,4 @@
-/* LEDPixelsOutputOLA.cpp: Source file to activate linters.
+/* NodesSampler.cpp: Source file to activate linters.
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,4 +8,4 @@
  * This source code is closed sourced.
  */
 
-#include <ledpixel/LEDPixelsOutputOLA.hpp>
+#include <aniray/NodesSampler.hpp>

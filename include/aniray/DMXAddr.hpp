@@ -1,4 +1,4 @@
-/* DMXAddr.hpp: Headers DMX addressing for LED Pixel systems
+/* DMXAddr.hpp: Headers DMX addressing for Aniray systems
  *
  * Created by Perry Naseck on 2022-09-21.
  *
@@ -8,13 +8,13 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_DMXADDR_HPP
-#define LEDPIXEL_DMXADDR_HPP
+#ifndef ANIRAY_DMXADDR_HPP
+#define ANIRAY_DMXADDR_HPP
 
 #include <cstdint>
 #include <ostream>
 
-namespace ledpixel {
+namespace aniray {
 
 using std::uint32_t;
 using std::uint8_t;
@@ -26,6 +26,6 @@ struct DMXAddr {
 
 auto operator<<(std::ostream &out, const DMXAddr &d) -> std::ostream &;
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_DMXADDR_HPP
+#endif // ANIRAY_DMXADDR_HPP

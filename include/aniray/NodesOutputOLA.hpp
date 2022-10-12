@@ -1,4 +1,4 @@
-/* LEDPixelsOutputOLA.hpp: Headers for LED Pixel systems
+/* NodesOutputOLA.hpp: Headers for Aniray system OLA output
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_LEDPIXELSOUTPUTOLA_HPP
-#define LEDPIXEL_LEDPIXELSOUTPUTOLA_HPP
+#ifndef ANIRAY_NODESOUTPUTOLA_HPP
+#define ANIRAY_NODESOUTPUTOLA_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -27,35 +27,35 @@
 #include <ola/Logging.h>
 #include <ola/client/StreamingClient.h>
 
-#include <ledpixel/DMXAddr.hpp>
-#include <ledpixel/LEDPixelsOutput.hpp>
+#include <aniray/DMXAddr.hpp>
+#include <aniray/NodesOutput.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
 using std::size_t;
 using std::uint8_t;
 using std::uint8_t;
 
-template <typename LEDPixelsT, auto ColorToOutput>
-class LEDPixelsOutputOLA : LEDPixelsOutput<LEDPixelsT, ColorToOutput> {
+template <typename NodesT, auto ColorToOutput>
+class NodesOutputOLA : NodesOutput<NodesT, ColorToOutput> {
 public:
-  using InnerLEDPixelsT = LEDPixelsT;
-  using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::updateAndSend;
-  using LEDPixelsOutput<LEDPixelsT, ColorToOutput>::ledPixels;
+  using InnerNodesT = NodesT;
+  using NodesOutput<NodesT, ColorToOutput>::updateAndSend;
+  using NodesOutput<NodesT, ColorToOutput>::ledPixels;
 
-  LEDPixelsOutputOLA( LEDPixelsT & ledPixels)
-      : LEDPixelsOutput<LEDPixelsT, ColorToOutput>::LEDPixelsOutput(ledPixels) {
-    using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
+  NodesOutputOLA( NodesT & ledPixels)
+      : NodesOutput<NodesT, ColorToOutput>::NodesOutput(ledPixels) {
+    using NodeT = typename InnerNodesT::InnerNodeT;
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
-    for (std::shared_ptr<LEDPixelT> pixel : LEDPixelsOutput<LEDPixelsT, ColorToOutput>::ledPixels().pixels()) {
+    for (std::shared_ptr<NodeT> pixel : NodesOutput<NodesT, ColorToOutput>::ledPixels().pixels()) {
       DMXAddr addr = pixel->addr();
       if (mUniversesToBuffers.count(addr.mUniverse) < 1) {
         mBuffers.emplace_back();
         size_t i = mBuffers.size() - 1;
         mBuffers[i].Blackout();
         mUniversesToBuffers[addr.mUniverse] = i;
-        BOOST_LOG_TRIVIAL(info) << "LEDPixelsOutputOLA: Created universe "
+        BOOST_LOG_TRIVIAL(info) << "NodesOutputOLA: Created universe "
                                 << addr.mUniverse << " buffer " << i;
       }
     }
@@ -65,9 +65,9 @@ public:
     olaClientOptions.auto_start = false;
     mOLAClient = std::make_unique<ola::client::StreamingClient>(olaClientOptions);
     if (!mOLAClient->Setup()) {
-      throw std::runtime_error("LEDPixelsOutputOLA: Error setting up OLA!");
+      throw std::runtime_error("NodesOutputOLA: Error setting up OLA!");
     }
-    BOOST_LOG_TRIVIAL(info) << "LEDPixelsOutputOLA: Connected to OLA";
+    BOOST_LOG_TRIVIAL(info) << "NodesOutputOLA: Connected to OLA";
   }
 
 private:
@@ -85,13 +85,13 @@ private:
       if (!mOLAClient->SendDmx(universe, mBuffers[i])) {
         res = false;
         BOOST_LOG_TRIVIAL(error)
-            << "LEDPixelsOutputOLA: Send DMX failed universe " << universe;
+            << "NodesOutputOLA: Send DMX failed universe " << universe;
       }
     }
     return res;
   }
 };
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_LEDPIXELSOUTPUTOLA_HPP
+#endif // ANIRAY_NODESOUTPUTOLA_HPP

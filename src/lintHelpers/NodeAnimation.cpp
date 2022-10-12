@@ -1,4 +1,4 @@
-/* LEDPixel.cpp: Source file to activate linters.
+/* NodeAnimation.cpp: Source file to activate linters.
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,4 +8,4 @@
  * This source code is closed sourced.
  */
 
-#include <ledpixel/LEDPixel.hpp>
+#include <aniray/NodeAnimation.hpp>

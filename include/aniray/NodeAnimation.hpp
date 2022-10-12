@@ -1,4 +1,4 @@
-/* LEDPixelsAnimation.hpp: Headers for LED Pixel systems
+/* LEDPixelsAnimation.hpp: Headers for animating Aniray systems
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_LEDPIXELANIMATION_HPP
-#define LEDPIXEL_LEDPIXELANIMATION_HPP
+#ifndef ANIRAY_NODEANIMATION_HPP
+#define ANIRAY_NODEANIMATION_HPP
 
 #include <cstddef>
 #include <limits>
@@ -21,15 +21,15 @@
 #include <boost/preprocessor/seq/enum.hpp>
 #include <boost/preprocessor/seq/size.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
 using std::size_t;
 
-template <typename LEDPixelsT> class LEDPixelAnimation {
+template <typename NodesT> class NodeAnimation {
 public:
-  using InnerLEDPixelsT = LEDPixelsT;
+  using InnerNodesT = NodesT;
 
-  LEDPixelAnimation(LEDPixelsT &ledPixels) : mLEDPixels{ledPixels} {}
+  NodeAnimation(NodesT &ledPixels) : mLEDPixels{ledPixels} {}
 
   void frame() {
     if (++mFrameCount == 0) {
@@ -40,9 +40,9 @@ public:
 
 private:
   size_t mFrameCount = std::numeric_limits<size_t>::max();
-  LEDPixelsT &mLEDPixels;
+  NodesT &mLEDPixels;
 };
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_LEDPIXELANIMATION_HPP
+#endif // ANIRAY_NODEANIMATION_HPP

@@ -1,4 +1,4 @@
-/* DMXAddr.cpp: DMX addressing for LED Pixel systems
+/* DMXAddr.cpp: DMX addressing for Aniray systems
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,12 +8,12 @@
  * This source code is closed sourced.
  */
 
-#include <ledpixel/DMXAddr.hpp>
+#include <aniray/DMXAddr.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
 auto operator<<(std::ostream &out, const DMXAddr &d) -> std::ostream & {
   return out << "universe: " << d.mUniverse << " address: " << int(d.mAddr);
 }
 
-} // namespace ledpixel
+} // namespace aniray

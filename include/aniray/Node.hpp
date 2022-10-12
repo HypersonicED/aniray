@@ -1,4 +1,4 @@
-/* LEDPixel.hpp: Headers for LED Pixel systems
+/* LEDPixel.hpp: Headers for an Aniray node
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,31 +8,31 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_LEDPIXEL_HPP
-#define LEDPIXEL_LEDPIXEL_HPP
+#ifndef ANIRAY_NODE_HPP
+#define ANIRAY_NODE_HPP
 
 #include <ostream>
 
 #include <boost/geometry/io/dsv/write.hpp>
 
-#include <ledpixel/DMXAddr.hpp>
-#include <ledpixel/Geometry.hpp>
+#include <aniray/DMXAddr.hpp>
+#include <aniray/Geometry.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
-template <class ColorT> class LEDPixel {
+template <class ColorT> class Node {
 public:
   using InnerColorT = ColorT;
 
-  LEDPixel(Point coords, Point rot, DMXAddr addr, bool ignore,
+  Node(Point coords, Point rot, DMXAddr addr, bool ignore,
            float sampleRadius)
       : mCoords{coords}, mRot{rot}, mAddr{addr}, mIgnore{ignore},
         mSampleRadius{sampleRadius}, mColor{ColorT({0, 0, 0})} {}
-  LEDPixel(Point coords, Point rot)
+  Node(Point coords, Point rot)
       : mCoords{coords}, mRot{rot}, mAddr{DMXAddr()}, mIgnore{false},
         mSampleRadius{0}, mColor{ColorT({0, 0, 0})} {}
 
-  friend auto operator<<(std::ostream &out, const LEDPixel<ColorT> &L)
+  friend auto operator<<(std::ostream &out, const Node<ColorT> &L)
       -> std::ostream & {
     out << "coords: " << boost::geometry::dsv(L.mCoords);
     out << " DMXAddr: {" << L.mAddr << "}";
@@ -72,6 +72,6 @@ private:
   ColorT mColor;
 };
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_LEDPIXEL_HPP
+#endif // ANIRAY_NODE_HPP

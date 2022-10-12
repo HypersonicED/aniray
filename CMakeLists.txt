@@ -1,37 +1,37 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(ledpixel LANGUAGES CXX)
+project(aniray LANGUAGES CXX)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
     YES
     CACHE BOOL "Export all symbols")
 
-option(LEDPIXEL_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
-option(LEDPIXEL_WITH_LINT "Run clang-tidy and iwyu" NO)
+option(ANIRAY_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
+option(ANIRAY_WITH_LINT "Run clang-tidy and iwyu" NO)
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(Boost 1.74.0 REQUIRED COMPONENTS log)
 find_package(OpenSSL 1.1.0 REQUIRED)
 
-if(LEDPIXEL_WITH_LINT)
+if(ANIRAY_WITH_LINT)
   find_program(IWYU_EXE NAMES include-what-you-use iwyu REQUIRED)
   find_program(CLANG_TIDY_EXE NAMES "clang-tidy" "clang-tidy-13" "clang-tidy-12"
                                     "clang-tidy-11" REQUIRED)
 endif()
 
-if(NOT LEDPIXEL_WITHOUT_OLA)
+if(NOT ANIRAY_WITHOUT_OLA)
   find_package(PkgConfig)
   pkg_check_modules(LIBOLA libola>=0.10.8 REQUIRED)
 endif()
 
 add_library(
   ${CMAKE_PROJECT_NAME}
-  include/ledpixel/DMXAddr.hpp
-  include/ledpixel/Geometry.hpp
-  include/ledpixel/LEDPixel.hpp
-  include/ledpixel/LEDPixelAnimation.hpp
-  include/ledpixel/LEDPixels.hpp
-  include/ledpixel/LEDPixelsOutput.hpp
-  include/ledpixel/LEDPixelsSampler.hpp
+  include/aniray/DMXAddr.hpp
+  include/aniray/Geometry.hpp
+  include/aniray/Node.hpp
+  include/aniray/NodeAnimation.hpp
+  include/aniray/Nodes.hpp
+  include/aniray/NodesOutput.hpp
+  include/aniray/NodesSampler.hpp
   src/DMXAddr.cpp)
 add_library("${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}" ALIAS "${CMAKE_PROJECT_NAME}")
 
@@ -42,22 +42,22 @@ set_target_properties(
   PROPERTIES LINKER_LANGUAGE CXX)
               # CXX_EXTENSIONS OFF)
 
-if(NOT LEDPIXEL_WITHOUT_OLA)
+if(NOT ANIRAY_WITHOUT_OLA)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
-  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/ledpixel/LEDPixelsOutputOLA.hpp)
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/NodesOutputOLA.hpp)
 endif()
 
-if(LEDPIXEL_WITH_LINT)
+if(ANIRAY_WITH_LINT)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
   target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   src/lintHelpers/Geometry.cpp
-  src/lintHelpers/LEDPixel.cpp
-  src/lintHelpers/LEDPixelAnimation.cpp
-  src/lintHelpers/LEDPixels.cpp
-  src/lintHelpers/LEDPixelsOutput.cpp
-  src/lintHelpers/LEDPixelsSampler.cpp)
-  if(NOT LEDPIXEL_WITHOUT_OLA)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/LEDPixelsOutputOLA.cpp)
+  src/lintHelpers/Node.cpp
+  src/lintHelpers/NodeAnimation.cpp
+  src/lintHelpers/Nodes.cpp
+  src/lintHelpers/NodesOutput.cpp
+  src/lintHelpers/NodesSampler.cpp)
+  if(NOT ANIRAY_WITHOUT_OLA)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/NodesOutputOLA.cpp)
   endif()
   set_target_properties(
     ${CMAKE_PROJECT_NAME}

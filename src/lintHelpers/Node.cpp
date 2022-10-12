@@ -1,4 +1,4 @@
-/* LEDPixelsOutput.cpp: Source file to activate linters.
+/* Node.cpp: Source file to activate linters.
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,4 +8,4 @@
  * This source code is closed sourced.
  */
 
-#include <ledpixel/LEDPixelsOutput.hpp>
+#include <aniray/Node.hpp>

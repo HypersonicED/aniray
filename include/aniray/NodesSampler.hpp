@@ -1,4 +1,4 @@
-/* LEDPixelsSampler.hpp: Headers for LED Pixel systems
+/* NodesSampler.hpp: Headers for sampling Aniray systems
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef LEDPIXEL_LEDPIXELSSAMPLER_HPP
-#define LEDPIXEL_LEDPIXELSSAMPLER_HPP
+#ifndef ANIRAY_NODESSAMPLER_HPP
+#define ANIRAY_NODESSAMPLER_HPP
 
 #include <cmath>
 #include <map>
@@ -22,27 +22,27 @@
 // IWYU pragma: no_include "color/generic/model.hpp"
 // IWYU pragma: no_include "color/rgb/rgb.hpp"
 
-#include <ledpixel/Geometry.hpp>
+#include <aniray/Geometry.hpp>
 
-namespace ledpixel {
+namespace aniray {
 
-template <typename LEDPixelsT> class LEDPixelsSampler {
+template <typename NodesT> class NodesSampler {
 public:
-  using InnerLEDPixelsT = LEDPixelsT;
-  using LEDPixelT = typename InnerLEDPixelsT::InnerLEDPixelT;
-  using ColorT = typename InnerLEDPixelsT::InnerLEDPixelT::InnerColorT;
+  using InnerNodesT = NodesT;
+  using NodeT = typename InnerNodesT::InnerNodeT;
+  using ColorT = typename InnerNodesT::InnerNodeT::InnerColorT;
 
-  LEDPixelsSampler(LEDPixelsT &targetLEDPixels, LEDPixelsT sourceLEDPixels)
+  NodesSampler(NodesT &targetLEDPixels, NodesT sourceLEDPixels)
       : mTargetLEDPixels{targetLEDPixels}, mSourceLEDPixels{sourceLEDPixels} {
-    for (std::shared_ptr<LEDPixelT> targetPixel : mTargetLEDPixels.pixels()) {
-      mSamplerMap[targetPixel] = std::vector<std::shared_ptr<LEDPixelT>>();
+    for (std::shared_ptr<NodeT> targetPixel : mTargetLEDPixels.pixels()) {
+      mSamplerMap[targetPixel] = std::vector<std::shared_ptr<NodeT>>();
     }
     // NOLINT(cppcoreguidelines-init-variables)
-    for (std::shared_ptr<LEDPixelT> sourcePixel : mSourceLEDPixels.pixels()) {
+    for (std::shared_ptr<NodeT> sourcePixel : mSourceLEDPixels.pixels()) {
       Point sourceCoords = sourcePixel->coords();
       mTargetLEDPixels.findPixelsInRadiusOfSource(
           sourceCoords,
-          [&sourcePixel, this](const std::shared_ptr<LEDPixelT> targetPixel) -> bool {
+          [&sourcePixel, this](const std::shared_ptr<NodeT> targetPixel) -> bool {
             mSamplerMap[targetPixel].push_back(sourcePixel);
             return false;
           });
@@ -58,7 +58,7 @@ public:
       std::vector<double> mixR;
       std::vector<double> mixG;
       std::vector<double> mixB;
-      for (std::shared_ptr<LEDPixelT> sourcePixel : sources) {
+      for (std::shared_ptr<NodeT> sourcePixel : sources) {
         MixColor sourceColor{};
         sourceColor = sourcePixel->color();
         mixR.push_back(sourceColor[0] * sourceColor[0]);
@@ -77,12 +77,12 @@ public:
   }
 
 private:
-  LEDPixelsT &mTargetLEDPixels;
-  LEDPixelsT mSourceLEDPixels;
-  std::map<std::shared_ptr<LEDPixelT>, std::vector<std::shared_ptr<LEDPixelT>>>
+  NodesT &mTargetLEDPixels;
+  NodesT mSourceLEDPixels;
+  std::map<std::shared_ptr<NodeT>, std::vector<std::shared_ptr<NodeT>>>
       mSamplerMap;
 };
 
-} // namespace ledpixel
+} // namespace aniray
 
-#endif // LEDPIXEL_LEDPIXELSSAMPLER_HPP
+#endif // ANIRAY_NODESSAMPLER_HPP
