@@ -21,7 +21,7 @@ namespace aniray {
 using std::uint32_t;
 using std::uint8_t;
 
-template <typename NodeArrayT, auto ColorToOutput> class NodeArrayOutput {
+template <typename NodeArrayT, auto DataToOutput> class NodeArrayOutput {
 public:
   using InnerNodeArrayT = NodeArrayT;
 
@@ -29,14 +29,14 @@ public:
 
   auto updateAndSend() -> bool {
     using NodeT = typename InnerNodeArrayT::InnerNodeT;
-    using ColorT = typename InnerNodeArrayT::InnerNodeT::InnerColorT;
+    using DataT = typename InnerNodeArrayT::InnerNodeT::InnerDataT;
     for (std::shared_ptr<NodeT> node : mNodeArray.nodes()) {
       if (node->ignore()) {
         continue;
       }
       DMXAddr addr = node->addr();
-      ColorT color = node->color();
-      auto output = ColorToOutput(color);
+      DataT data = node->data();
+      auto output = DataToOutput(data);
       for (int i = 0; i < sizeof(output); i++) {
         setChannel(addr.mUniverse, (addr.mAddr - 1) + i, output[i]);
       }

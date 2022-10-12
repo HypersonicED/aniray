@@ -36,19 +36,19 @@ using std::size_t;
 using std::uint8_t;
 using std::uint8_t;
 
-template <typename NodeArrayT, auto ColorToOutput>
-class NodeArrayOutputOLA : NodeArrayOutput<NodeArrayT, ColorToOutput> {
+template <typename NodeArrayT, auto DataToOutput>
+class NodeArrayOutputOLA : NodeArrayOutput<NodeArrayT, DataToOutput> {
 public:
   using InnerNodeArrayT = NodeArrayT;
-  using NodeArrayOutput<NodeArrayT, ColorToOutput>::updateAndSend;
-  using NodeArrayOutput<NodeArrayT, ColorToOutput>::nodeArray;
+  using NodeArrayOutput<NodeArrayT, DataToOutput>::updateAndSend;
+  using NodeArrayOutput<NodeArrayT, DataToOutput>::nodeArray;
 
   NodeArrayOutputOLA( NodeArrayT & nodes)
-      : NodeArrayOutput<NodeArrayT, ColorToOutput>::NodeArrayOutput(nodes) {
+      : NodeArrayOutput<NodeArrayT, DataToOutput>::NodeArrayOutput(nodes) {
     using NodeT = typename InnerNodeArrayT::InnerNodeT;
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
-    for (std::shared_ptr<NodeT> node : NodeArrayOutput<NodeArrayT, ColorToOutput>::nodeArray().nodes()) {
+    for (std::shared_ptr<NodeT> node : NodeArrayOutput<NodeArrayT, DataToOutput>::nodeArray().nodes()) {
       DMXAddr addr = node->addr();
       if (mUniversesToBuffers.count(addr.mUniverse) < 1) {
         mBuffers.emplace_back();
@@ -85,7 +85,7 @@ private:
       if (!mOLAClient->SendDmx(universe, mBuffers[i])) {
         res = false;
         BOOST_LOG_TRIVIAL(error)
-            << "NodesOutputOLA: Send DMX failed universe " << universe;
+            << "NodeArrayOutputOLA: Send DMX failed universe " << universe;
       }
     }
     return res;

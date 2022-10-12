@@ -1,4 +1,4 @@
-/* NodesAnimation.hpp: Headers for animating Aniray systems
+/* NodeAnimation.hpp: Headers for animating Aniray systems
  *
  * Created by Perry Naseck on 2022-08-24.
  *

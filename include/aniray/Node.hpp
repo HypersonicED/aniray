@@ -20,19 +20,19 @@
 
 namespace aniray {
 
-template <class ColorT> class Node {
+template <class DataT> class Node {
 public:
-  using InnerColorT = ColorT;
+  using InnerDataT = DataT;
 
   Node(Point coords, Point rot, DMXAddr addr, bool ignore,
            float sampleRadius)
       : mCoords{coords}, mRot{rot}, mAddr{addr}, mIgnore{ignore},
-        mSampleRadius{sampleRadius}, mColor{ColorT({0, 0, 0})} {}
+        mSampleRadius{sampleRadius}, mData{DataT()} {}
   Node(Point coords, Point rot)
       : mCoords{coords}, mRot{rot}, mAddr{DMXAddr()}, mIgnore{false},
-        mSampleRadius{0}, mColor{ColorT({0, 0, 0})} {}
+        mSampleRadius{0}, mData{DataT()} {}
 
-  friend auto operator<<(std::ostream &out, const Node<ColorT> &L)
+  friend auto operator<<(std::ostream &out, const Node<DataT> &L)
       -> std::ostream & {
     out << "coords: " << boost::geometry::dsv(L.mCoords);
     out << " DMXAddr: {" << L.mAddr << "}";
@@ -56,11 +56,11 @@ public:
   [[nodiscard]] auto sampleRadius() const -> double {
     return mSampleRadius;
   }
-  auto color() const -> ColorT {
-    return mColor;
+  auto data() const -> DataT {
+    return mData;
   }
-  void color(ColorT newColor) {
-    mColor = newColor;
+  void data(DataT newData) {
+    mData = newData;
   }
 
 private:
@@ -69,7 +69,7 @@ private:
   DMXAddr mAddr;
   bool mIgnore;
   double mSampleRadius;
-  ColorT mColor;
+  DataT mData;
 };
 
 } // namespace aniray

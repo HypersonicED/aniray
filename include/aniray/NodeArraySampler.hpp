@@ -11,16 +11,9 @@
 #ifndef ANIRAY_NODEARRAYSAMPLER_HPP
 #define ANIRAY_NODEARRAYSAMPLER_HPP
 
-#include <cmath>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <vector>
-
-#include "color/color.hpp" // IWYU pragma: keep
-// IWYU pragma: no_include "color/_internal/proxy.hpp"
-// IWYU pragma: no_include "color/generic/model.hpp"
-// IWYU pragma: no_include "color/rgb/rgb.hpp"
 
 #include <aniray/Geometry.hpp>
 
@@ -30,7 +23,7 @@ template <typename NodeArrayT> class NodeArraySampler {
 public:
   using InnerNodeArrayT = NodeArrayT;
   using NodeT = typename InnerNodeArrayT::InnerNodeT;
-  using ColorT = typename InnerNodeArrayT::InnerNodeT::InnerColorT;
+  using DataT = typename InnerNodeArrayT::InnerNodeT::InnerDataT;
 
   NodeArraySampler(NodeArrayT &targetNodeArray, NodeArrayT sourceNodeArray)
       : mTargetNodeArray{targetNodeArray}, mSourceNodeArray{sourceNodeArray} {
@@ -49,30 +42,12 @@ public:
     }
   }
 
-  void sampleAsRGB() {
-    using MixColor = color::rgb<double>;
+  template <typename sampleFuncT> void sample(sampleFuncT&& sampleFunc) {
     for (auto const &[targetNode, sources] : mSamplerMap) {
       if (targetNode->ignore()) {
         continue;
       }
-      std::vector<double> mixR;
-      std::vector<double> mixG;
-      std::vector<double> mixB;
-      for (std::shared_ptr<NodeT> sourceNode : sources) {
-        MixColor sourceColor{};
-        sourceColor = sourceNode->color();
-        mixR.push_back(sourceColor[0] * sourceColor[0]);
-        mixG.push_back(sourceColor[1] * sourceColor[1]);
-        mixB.push_back(sourceColor[2] * sourceColor[2]);
-      }
-      MixColor targetColor(
-          {std::sqrt(std::accumulate(mixR.begin(), mixR.end(), 0.0) /
-                     static_cast<double>(mixR.size())),
-           std::sqrt(std::accumulate(mixG.begin(), mixG.end(), 0.0) /
-                     static_cast<double>(mixG.size())),
-           std::sqrt(std::accumulate(mixB.begin(), mixB.end(), 0.0) /
-                     static_cast<double>(mixB.size()))});
-      targetNode->color(static_cast<ColorT>(targetColor));
+      targetNode->data(sampleFunc(targetNode, sources));
     }
   }
 

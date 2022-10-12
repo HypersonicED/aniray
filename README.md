@@ -1,6 +1,6 @@
-aniray
+Aniray
 ======
-A library for animating and orchestrating large arrays of emitters, actuators, displays, and more.
+Aniray is a library for animating and orchestrating large arrays of emitters, actuators, displays, and more.
 
 ## Features
 
@@ -24,8 +24,8 @@ A library for animating and orchestrating large arrays of emitters, actuators, d
 ## Build and Lint Requirements
 
 - CMake
-- `iwyu` (include-what-you-use) with `-DANIRAY_WITH_LINT_=ON`
-- `clang-tidy` with `-DANIRAY_WITH_LINT_=ON`
+- `iwyu` (include-what-you-use) with `-DANIRAY_WITH_LINT=ON`
+- `clang-tidy` with `-DANIRAY_WITH_LINT=ON`
 
 ## Using
 
