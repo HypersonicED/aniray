@@ -6,15 +6,17 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
     CACHE BOOL "Export all symbols")
 
 option(LEDPIXEL_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
-option(LEDPIXEL_WITH_LINT "Run clang-tidy" NO)
+option(LEDPIXEL_WITH_LINT "Run clang-tidy and iwyu" NO)
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(Boost 1.74.0 REQUIRED COMPONENTS log)
 find_package(OpenSSL 1.1.0 REQUIRED)
 
-find_program(IWYU_EXE NAMES include-what-you-use iwyu REQUIRED)
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy" "clang-tidy-13" "clang-tidy-12"
-                                  "clang-tidy-11" REQUIRED)
+if(LEDPIXEL_WITH_LINT)
+  find_program(IWYU_EXE NAMES include-what-you-use iwyu REQUIRED)
+  find_program(CLANG_TIDY_EXE NAMES "clang-tidy" "clang-tidy-13" "clang-tidy-12"
+                                    "clang-tidy-11" REQUIRED)
+endif()
 
 if(NOT LEDPIXEL_WITHOUT_OLA)
   find_package(PkgConfig)
