@@ -1,4 +1,4 @@
-/* LEDPixelsAnimation.hpp: Headers for animating Aniray systems
+/* NodesAnimation.hpp: Headers for animating Aniray systems
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -25,11 +25,11 @@ namespace aniray {
 
 using std::size_t;
 
-template <typename NodesT> class NodeAnimation {
+template <typename NodeArrayT> class NodeAnimation {
 public:
-  using InnerNodesT = NodesT;
+  using InnerNodeArrayT = NodeArrayT;
 
-  NodeAnimation(NodesT &ledPixels) : mLEDPixels{ledPixels} {}
+  NodeAnimation(NodeArrayT &nodeArray) : mNodeArray{nodeArray} {}
 
   void frame() {
     if (++mFrameCount == 0) {
@@ -40,7 +40,7 @@ public:
 
 private:
   size_t mFrameCount = std::numeric_limits<size_t>::max();
-  NodesT &mLEDPixels;
+  NodeArrayT &mNodeArray;
 };
 
 } // namespace aniray

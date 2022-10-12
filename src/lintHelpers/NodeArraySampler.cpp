@@ -1,4 +1,4 @@
-/* NodesOutputOLA.cpp: Source file to activate linters.
+/* NodeArraySampler.cpp: Source file to activate linters.
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,4 +8,4 @@
  * This source code is closed sourced.
  */
 
-#include <aniray/NodesOutputOLA.hpp>
+#include <aniray/NodeArraySampler.hpp>

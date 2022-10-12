@@ -1,4 +1,4 @@
-/* Nodes.cpp: Source file to activate linters.
+/* NodeArray.cpp: Source file to activate linters.
  *
  * Created by Perry Naseck on 2022-09-22.
  *
@@ -8,4 +8,4 @@
  * This source code is closed sourced.
  */
 
-#include <aniray/Nodes.hpp>
+#include <aniray/NodeArray.hpp>

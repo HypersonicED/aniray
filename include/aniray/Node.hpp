@@ -1,4 +1,4 @@
-/* LEDPixel.hpp: Headers for an Aniray node
+/* Node.hpp: Headers for an Aniray node
  *
  * Created by Perry Naseck on 2022-08-24.
  *

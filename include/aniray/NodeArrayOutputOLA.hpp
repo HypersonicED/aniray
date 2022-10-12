@@ -1,4 +1,4 @@
-/* NodesOutputOLA.hpp: Headers for Aniray system OLA output
+/* NodeArrayOutputOLA.hpp: Headers for Aniray system OLA output
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef ANIRAY_NODESOUTPUTOLA_HPP
-#define ANIRAY_NODESOUTPUTOLA_HPP
+#ifndef ANIRAY_NODEARRAYOUTPUTOLA_HPP
+#define ANIRAY_NODEARRAYOUTPUTOLA_HPP
 
 #include <cstddef>
 #include <cstdint>
@@ -28,7 +28,7 @@
 #include <ola/client/StreamingClient.h>
 
 #include <aniray/DMXAddr.hpp>
-#include <aniray/NodesOutput.hpp>
+#include <aniray/NodeArrayOutput.hpp>
 
 namespace aniray {
 
@@ -36,26 +36,26 @@ using std::size_t;
 using std::uint8_t;
 using std::uint8_t;
 
-template <typename NodesT, auto ColorToOutput>
-class NodesOutputOLA : NodesOutput<NodesT, ColorToOutput> {
+template <typename NodeArrayT, auto ColorToOutput>
+class NodeArrayOutputOLA : NodeArrayOutput<NodeArrayT, ColorToOutput> {
 public:
-  using InnerNodesT = NodesT;
-  using NodesOutput<NodesT, ColorToOutput>::updateAndSend;
-  using NodesOutput<NodesT, ColorToOutput>::ledPixels;
+  using InnerNodeArrayT = NodeArrayT;
+  using NodeArrayOutput<NodeArrayT, ColorToOutput>::updateAndSend;
+  using NodeArrayOutput<NodeArrayT, ColorToOutput>::nodeArray;
 
-  NodesOutputOLA( NodesT & ledPixels)
-      : NodesOutput<NodesT, ColorToOutput>::NodesOutput(ledPixels) {
-    using NodeT = typename InnerNodesT::InnerNodeT;
+  NodeArrayOutputOLA( NodeArrayT & nodes)
+      : NodeArrayOutput<NodeArrayT, ColorToOutput>::NodeArrayOutput(nodes) {
+    using NodeT = typename InnerNodeArrayT::InnerNodeT;
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
-    for (std::shared_ptr<NodeT> pixel : NodesOutput<NodesT, ColorToOutput>::ledPixels().pixels()) {
-      DMXAddr addr = pixel->addr();
+    for (std::shared_ptr<NodeT> node : NodeArrayOutput<NodeArrayT, ColorToOutput>::nodeArray().nodes()) {
+      DMXAddr addr = node->addr();
       if (mUniversesToBuffers.count(addr.mUniverse) < 1) {
         mBuffers.emplace_back();
         size_t i = mBuffers.size() - 1;
         mBuffers[i].Blackout();
         mUniversesToBuffers[addr.mUniverse] = i;
-        BOOST_LOG_TRIVIAL(info) << "NodesOutputOLA: Created universe "
+        BOOST_LOG_TRIVIAL(info) << "NodeArrayOutputOLA: Created universe "
                                 << addr.mUniverse << " buffer " << i;
       }
     }
@@ -65,9 +65,9 @@ public:
     olaClientOptions.auto_start = false;
     mOLAClient = std::make_unique<ola::client::StreamingClient>(olaClientOptions);
     if (!mOLAClient->Setup()) {
-      throw std::runtime_error("NodesOutputOLA: Error setting up OLA!");
+      throw std::runtime_error("NodeArrayOutputOLA: Error setting up OLA!");
     }
-    BOOST_LOG_TRIVIAL(info) << "NodesOutputOLA: Connected to OLA";
+    BOOST_LOG_TRIVIAL(info) << "NodeArrayOutputOLA: Connected to OLA";
   }
 
 private:
@@ -94,4 +94,4 @@ private:
 
 } // namespace aniray
 
-#endif // ANIRAY_NODESOUTPUTOLA_HPP
+#endif // ANIRAY_NODEARRAYOUTPUTOLA_HPP

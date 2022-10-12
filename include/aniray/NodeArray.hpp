@@ -1,4 +1,4 @@
-/* LEDPixels.hpp: Headers for Aniray nodes
+/* NodeArray.hpp: Headers for Aniray nodes
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef ANIRAY_NODES_HPP
-#define ANIRAY_NODES_HPP
+#ifndef ANIRAY_NODEARRAY_HPP
+#define ANIRAY_NODEARRAY_HPP
 
 #include <algorithm>
 #include <array>
@@ -59,22 +59,22 @@ using std::uint8_t;
 
 const size_t ANIRAY_NODES_FROM_CSV_NUM_COLUMNS = 11;
 
-template <typename NodeT> class Nodes {
+template <typename NodeT> class NodeArray {
 public:
   using InnerNodeT = NodeT;
 
-  // pixels and groups
-  Nodes(std::vector<NodeT> pixels,
+  // nodes and groups
+  NodeArray(std::vector<NodeT> nodes,
             const std::map<std::string, std::vector<size_t>> &groups) {
     MultiPoint points;
     size_t index = 0;
-    for (NodeT pixel : pixels) {
-      mPixels.push_back(std::make_shared<NodeT>(pixel));
-      boost::geometry::append(points, pixel.coords());
+    for (NodeT node : nodes) {
+      mNodes.push_back(std::make_shared<NodeT>(node));
+      boost::geometry::append(points, node.coords());
       for (auto const &[groupName, groupIndexes] : groups) {
         if (std::find(groupIndexes.begin(), groupIndexes.end(), index) !=
             groupIndexes.end()) {
-          mGroups[groupName].push_back(mPixels.back());
+          mGroups[groupName].push_back(mNodes.back());
         }
       }
       index++;
@@ -89,17 +89,17 @@ public:
     if (EVP_DigestInit_ex(m_context, EVP_get_digestbyname("sha512"), nullptr) ==
         0) {
       throw std::runtime_error(
-          "Nodes: Error in OpenSSL EVP_DigestInit_ex() for hash");
+          "NodeArray: Error in OpenSSL EVP_DigestInit_ex() for hash");
     }
     if (EVP_DigestUpdate(m_context, hashInStr.str().c_str(),
                          hashInStr.str().length()) == 0) {
       throw std::runtime_error(
-          "Nodes: Error in OpenSSL EVP_DigestUpdate() for hash");
+          "NodeArray: Error in OpenSSL EVP_DigestUpdate() for hash");
     }
     unsigned int hashLength = 0;
     if (EVP_DigestFinal_ex(m_context, hash.begin(), &hashLength) == 0) {
       throw std::runtime_error(
-          "Nodes: Error in OpenSSL EVP_DigestFinal_ex() for hash");
+          "NodeArray: Error in OpenSSL EVP_DigestFinal_ex() for hash");
     }
     std::ostringstream hashStream;
     for (size_t i = 0; i < hashLength; ++i) {
@@ -109,23 +109,23 @@ public:
     mHash = hashStream.str();
     EVP_MD_CTX_destroy(m_context);
   }
-  // pixels
-  Nodes(std::vector<NodeT> pixels)
-      : Nodes(pixels, std::map<std::string, std::vector<size_t>>{}) {}
-  // pixels and groups as tuple
-  Nodes(std::tuple<std::vector<NodeT>,
+  // nodes
+  NodeArray(std::vector<NodeT> nodes)
+      : NodeArray(nodes, std::map<std::string, std::vector<size_t>>{}) {}
+  // nodes and groups as tuple
+  NodeArray(std::tuple<std::vector<NodeT>,
                        std::map<std::string, std::vector<size_t>>>
-                pixelsAndGroups)
-      : Nodes(std::get<0>(pixelsAndGroups), std::get<1>(pixelsAndGroups)) {}
+                nodesAndGroups)
+      : NodeArray(std::get<0>(nodesAndGroups), std::get<1>(nodesAndGroups)) {}
   // csv file
-  Nodes(const std::string &filename) : Nodes{pixelsFromCSV(filename)} {}
+  NodeArray(const std::string &filename) : NodeArray{nodesFromCSV(filename)} {}
   // auto grid from target for sampler
-  Nodes(Nodes &targetLEDPixels, bool useCache, double spacing)
-      : Nodes{
-            pixelGridFromTargetSpacing(targetLEDPixels, useCache, spacing)} {
+  NodeArray(NodeArray &targetNodeArray, bool useCache, double spacing)
+      : NodeArray{
+            nodeGridFromTargetSpacing(targetNodeArray, useCache, spacing)} {
     if (useCache) {
-      std::string cacheName = getCacheName(spacing, targetLEDPixels.mHash);
-      pixelsToCSV(cacheName);
+      std::string cacheName = getCacheName(spacing, targetNodeArray.mHash);
+      nodesToCSV(cacheName);
     }
   }
 
@@ -145,16 +145,16 @@ public:
     return mGroups;
   }
 
-  auto pixels() -> std::vector<std::shared_ptr<NodeT>> & {
-    return mPixels;
+  auto nodes() -> std::vector<std::shared_ptr<NodeT>> & {
+    return mNodes;
   }
 
-  auto pixelGroupsToString(std::shared_ptr<NodeT> pixel,
+  auto nodeGroupsToString(std::shared_ptr<NodeT> node,
                            std::string *groupsStr) -> size_t {
     std::ostringstream groups;
     size_t count = 0;
-    for (auto const &[groupName, groupPixels] : mGroups) {
-      if (std::count(groupPixels.begin(), groupPixels.end(), pixel) > 0) {
+    for (auto const &[groupName, groupNodes] : mGroups) {
+      if (std::count(groupNodes.begin(), groupNodes.end(), node) > 0) {
         if (count > 0) {
           groups << ",";
         }
@@ -165,21 +165,21 @@ public:
     *groupsStr = groups.str();
     return count;
   }
-  friend auto operator<<(std::ostream &out, Nodes<NodeT> &L)
+  friend auto operator<<(std::ostream &out, NodeArray<NodeT> &L)
       -> std::ostream & {
     out << "center: " << boost::geometry::dsv(L.mCenter);
     out << " envelope: " << boost::geometry::dsv(L.mEnvelope);
-    out << " pixelsAndGroups: (";
-    for (std::shared_ptr<NodeT> pixel : L.mPixels) {
-      std::string pixelGroups;
-      L.pixelGroupsToString(pixel, &pixelGroups);
-      out << "{ pixel: {" << *pixel;
-      out << "} groups: (" << pixelGroups << ")},";
+    out << " nodesAndGroups: (";
+    for (std::shared_ptr<NodeT> node : L.mNodes) {
+      std::string nodeGroups;
+      L.nodeGroupsToString(node, &nodeGroups);
+      out << "{ node: {" << *node;
+      out << "} groups: (" << nodeGroups << ")},";
     }
     out << ")";
     return out;
   }
-  void pixelsToCSV(const std::string &filename) {
+  void nodesToCSV(const std::string &filename) {
     std::ofstream file(filename);
     file << "universe"
          << ",startAddr"
@@ -192,25 +192,25 @@ public:
          << ",ignore"
          << ",sampleRadius"
          << ",groups" << std::endl;
-    for (std::shared_ptr<NodeT> pixel : mPixels) {
-      std::string pixelGroups;
-      size_t groupsCount = pixelGroupsToString(pixel, &pixelGroups);
-      file << pixel->addr().mUniverse << "," << int(pixel->addr().mAddr);
-      file << "," << std::to_string(pixel->coords().x()) << ","
-           << std::to_string(pixel->coords().z() * -1) << ","
+    for (std::shared_ptr<NodeT> node : mNodes) {
+      std::string nodeGroups;
+      size_t groupsCount = nodeGroupsToString(node, &nodeGroups);
+      file << node->addr().mUniverse << "," << int(node->addr().mAddr);
+      file << "," << std::to_string(node->coords().x()) << ","
+           << std::to_string(node->coords().z() * -1) << ","
            << std::to_string(
-                  pixel->coords().y()); // Real world z is up, in sim y is up
-      file << "," << std::to_string(pixel->rot().z() * -1) << ","
-           << std::to_string(pixel->rot().y() * -1) << ","
-           << std::to_string(pixel->rot().x() * -1);
-      file << "," << std::boolalpha << pixel->ignore();
-      file << "," << std::to_string(pixel->sampleRadius());
+                  node->coords().y()); // Real world z is up, in sim y is up
+      file << "," << std::to_string(node->rot().z() * -1) << ","
+           << std::to_string(node->rot().y() * -1) << ","
+           << std::to_string(node->rot().x() * -1);
+      file << "," << std::boolalpha << node->ignore();
+      file << "," << std::to_string(node->sampleRadius());
       if (groupsCount >= 2) {
         file << ",\"";
       } else {
         file << ",";
       }
-      file << pixelGroups;
+      file << nodeGroups;
       if (groupsCount >= 2) {
         file << "\"";
       }
@@ -219,15 +219,15 @@ public:
     file.close();
   }
 
-  template <typename onFindFunc> void findPixelsInRadiusOfSource(
+  template <typename onFindFunc> void findNodesInRadiusOfSource(
       Point sourceCoords, onFindFunc&& onFind) {
     static std::map<double, double> comparableDistances;
-    for (std::shared_ptr<NodeT> targetPixel : mPixels) {
-      if (targetPixel->ignore()) {
+    for (std::shared_ptr<NodeT> targetNode : mNodes) {
+      if (targetNode->ignore()) {
         continue;
       }
-      Point targetCoords = targetPixel->coords();
-      double sampleRadius = targetPixel->sampleRadius();
+      Point targetCoords = targetNode->coords();
+      double sampleRadius = targetNode->sampleRadius();
       if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
         continue;
       }
@@ -251,7 +251,7 @@ public:
       if (distance > compare) {
         continue;
       }
-      bool breakAfterFind = onFind(targetPixel);
+      bool breakAfterFind = onFind(targetNode);
       if (breakAfterFind) {
         break;
       }
@@ -259,7 +259,7 @@ public:
   }
 
 private:
-  std::vector<std::shared_ptr<NodeT>> mPixels;
+  std::vector<std::shared_ptr<NodeT>> mNodes;
   Point mCenter;
   Box mEnvelope;
   std::string mHash;
@@ -268,14 +268,14 @@ private:
   static auto getCacheName(double spacing, const std::string &targetHash)
       -> std::string {
     std::ostringstream cacheName;
-    cacheName << "cache_pixelGrid_spacing_" << std::to_string(spacing)
+    cacheName << "cache_nodeGrid_spacing_" << std::to_string(spacing)
               << "_from_" << targetHash << ".csv";
     return cacheName.str();
   }
-  auto pixelsFromCSV(const std::string &filename) const
+  auto nodesFromCSV(const std::string &filename) const
       -> std::tuple<std::vector<NodeT>,
                     std::map<std::string, std::vector<size_t>>> {
-    std::vector<NodeT> ledPixels;
+    std::vector<NodeT> nodes;
     io::CSVReader<ANIRAY_NODES_FROM_CSV_NUM_COLUMNS,
                   io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>>
         in(filename);
@@ -308,8 +308,8 @@ private:
       } else {
         ignore = true;
         BOOST_LOG_TRIVIAL(warning)
-            << "Nodes: Unknown ignore bool value for pixel {" << addr
-            << "}, ignoring pixel";
+            << "NodeArray: Unknown ignore bool value for nodes {" << addr
+            << "}, ignoring nodes";
       }
       std::stringstream groupsStream;
       groupsStream << groupsStr;
@@ -320,23 +320,23 @@ private:
           groups[group].push_back(index);
         }
       }
-      ledPixels.push_back(NodeT(Point(x, y, z * -1),
+      nodes.push_back(NodeT(Point(x, y, z * -1),
                                     Point(zDeg * -1, yDeg * -1, xDeg * -1),
                                     addr, ignore, sampleRadius));
       index++;
     }
-    return std::make_tuple(ledPixels, groups);
+    return std::make_tuple(nodes, groups);
   }
-  auto pixelGridFromTargetSpacing(Nodes &targetLEDPixels, bool useCache,
+  auto nodeGridFromTargetSpacing(NodeArray &targetNodeArray, bool useCache,
                                   double spacing)
       -> std::vector<NodeT> {
     if (useCache) {
-      std::string cacheName = getCacheName(spacing, targetLEDPixels.mHash);
+      std::string cacheName = getCacheName(spacing, targetNodeArray.mHash);
       if (std::filesystem::exists(cacheName)) {
-        return std::get<0>(pixelsFromCSV(cacheName));
+        return std::get<0>(nodesFromCSV(cacheName));
       }
     }
-    Box targetEnvelope = targetLEDPixels.mEnvelope;
+    Box targetEnvelope = targetNodeArray.mEnvelope;
     Point targetMin = targetEnvelope.min_corner();
     Point targetMax = targetEnvelope.max_corner();
     boost::geometry::strategy::transform::translate_transformer<double, 3, 3>
@@ -353,7 +353,7 @@ private:
         static_cast<size_t>((gridEnd.y() - gridStart.y()) / spacing) + 1;
     size_t numZ =
         static_cast<size_t>((gridEnd.z() - gridStart.z()) / spacing) + 1;
-    std::vector<NodeT> ledPixels;
+    std::vector<NodeT> nodes;
     for (size_t i = 0; i < numX; i++) {
       for (size_t j = 0; j < numY; j++) {
         for (size_t k = 0; k < numZ; k++) {
@@ -361,18 +361,18 @@ private:
           double y = static_cast<double>(j) * spacing + gridStart.y();
           double z = static_cast<double>(k) * spacing + gridStart.z();
           Point newPoint(x, y, z);
-          targetLEDPixels.findPixelsInRadiusOfSource(
-              newPoint, [newPoint, &ledPixels](std::shared_ptr<NodeT> targetPixel) mutable -> bool { // NOLINT(misc-unused-parameters)
-                ledPixels.push_back(NodeT(newPoint, Point(0, 0, 0)));
+          targetNodeArray.findNodesInRadiusOfSource(
+              newPoint, [newPoint, &nodes](std::shared_ptr<NodeT> targetNode) mutable -> bool { // NOLINT(misc-unused-parameters)
+                nodes.push_back(NodeT(newPoint, Point(0, 0, 0)));
                 return true;
               });
         }
       }
     }
-    return ledPixels;
+    return nodes;
   }
 };
 
 } // namespace aniray
 
-#endif // ANIRAY_NODES_HPP
+#endif // ANIRAY_NODEARRAY_HPP

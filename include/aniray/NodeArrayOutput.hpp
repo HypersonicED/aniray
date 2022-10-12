@@ -1,4 +1,4 @@
-/* LEDPixelsOutput.hpp: Headers for Aniray system outputs
+/* NodeArrayOutput.hpp: Headers for Aniray system outputs
  *
  * Created by Perry Naseck on 2022-08-24.
  *
@@ -8,8 +8,8 @@
  * This source code is closed sourced.
  */
 
-#ifndef ANIRAY_NODESOUTPUT_HPP
-#define ANIRAY_NODESOUTPUT_HPP
+#ifndef ANIRAY_NODEARRAYOUTPUT_HPP
+#define ANIRAY_NODEARRAYOUTPUT_HPP
 
 #include <cstdint>
 #include <memory>
@@ -21,21 +21,21 @@ namespace aniray {
 using std::uint32_t;
 using std::uint8_t;
 
-template <typename NodesT, auto ColorToOutput> class NodesOutput {
+template <typename NodeArrayT, auto ColorToOutput> class NodeArrayOutput {
 public:
-  using InnerNodesT = NodesT;
+  using InnerNodeArrayT = NodeArrayT;
 
-  NodesOutput(NodesT &ledPixels) : mLEDPixels{ledPixels} {}
+  NodeArrayOutput(NodeArrayT &nodeArray) : mNodeArray{nodeArray} {}
 
   auto updateAndSend() -> bool {
-    using NodeT = typename InnerNodesT::InnerNodeT;
-    using ColorT = typename InnerNodesT::InnerNodeT::InnerColorT;
-    for (std::shared_ptr<NodeT> pixel : mLEDPixels.pixels()) {
-      if (pixel->ignore()) {
+    using NodeT = typename InnerNodeArrayT::InnerNodeT;
+    using ColorT = typename InnerNodeArrayT::InnerNodeT::InnerColorT;
+    for (std::shared_ptr<NodeT> node : mNodeArray.nodes()) {
+      if (node->ignore()) {
         continue;
       }
-      DMXAddr addr = pixel->addr();
-      ColorT color = pixel->color();
+      DMXAddr addr = node->addr();
+      ColorT color = node->color();
       auto output = ColorToOutput(color);
       for (int i = 0; i < sizeof(output); i++) {
         setChannel(addr.mUniverse, (addr.mAddr - 1) + i, output[i]);
@@ -44,8 +44,8 @@ public:
     return sendData();
   }
 
-  auto ledPixels() const -> NodesT & {
-    return mLEDPixels;
+  auto nodeArray() const -> NodeArrayT & {
+    return mNodeArray;
   }
 
 protected:
@@ -53,9 +53,9 @@ protected:
   virtual auto sendData() -> bool { return false; }
 
 private:
-  NodesT &mLEDPixels;
+  NodeArrayT &mNodeArray;
 };
 
 } // namespace aniray
 
-#endif // ANIRAY_NODESOUTPUT_HPP
+#endif // ANIRAY_NODEARRAYOUTPUT_HPP

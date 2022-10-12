@@ -29,9 +29,9 @@ add_library(
   include/aniray/Geometry.hpp
   include/aniray/Node.hpp
   include/aniray/NodeAnimation.hpp
-  include/aniray/Nodes.hpp
-  include/aniray/NodesOutput.hpp
-  include/aniray/NodesSampler.hpp
+  include/aniray/NodeArray.hpp
+  include/aniray/NodeArrayOutput.hpp
+  include/aniray/NodeArraySampler.hpp
   src/DMXAddr.cpp)
 add_library("${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}" ALIAS "${CMAKE_PROJECT_NAME}")
 
@@ -44,7 +44,7 @@ set_target_properties(
 
 if(NOT ANIRAY_WITHOUT_OLA)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
-  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/NodesOutputOLA.hpp)
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/NodeArrayOutputOLA.hpp)
 endif()
 
 if(ANIRAY_WITH_LINT)
@@ -53,11 +53,11 @@ if(ANIRAY_WITH_LINT)
   src/lintHelpers/Geometry.cpp
   src/lintHelpers/Node.cpp
   src/lintHelpers/NodeAnimation.cpp
-  src/lintHelpers/Nodes.cpp
-  src/lintHelpers/NodesOutput.cpp
-  src/lintHelpers/NodesSampler.cpp)
+  src/lintHelpers/NodeArray.cpp
+  src/lintHelpers/NodeArrayOutput.cpp
+  src/lintHelpers/NodeArraySampler.cpp)
   if(NOT ANIRAY_WITHOUT_OLA)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/NodesOutputOLA.cpp)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/NodeArrayOutputOLA.cpp)
   endif()
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
