@@ -45,7 +45,7 @@ if(NOT LEDPIXEL_WITHOUT_OLA)
   target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/ledpixel/LEDPixelsOutputOLA.hpp)
 endif()
 
-if(NOT LEDPIXEL_WITH_LINT)
+if(LEDPIXEL_WITH_LINT)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
   target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   src/lintHelpers/Geometry.cpp
