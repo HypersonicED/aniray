@@ -221,12 +221,20 @@ public:
 
   template <typename onFindFunc> void findNodesInRadiusOfSource(
       Point sourceCoords, onFindFunc&& onFind) {
+        findNodesInRadiusOfSource(sourceCoords, onFind, false, 0);
+      }
+  template <typename onFindFunc> void findNodesInRadiusOfSource(
+      Point sourceCoords, onFindFunc&& onFind, bool customRadius,
+      double sampleRadius) {
     static std::map<double, double> comparableDistances;
     for (std::shared_ptr<NodeT> targetNode : mNodes) {
       if (targetNode->ignore()) {
         continue;
       }
       Point targetCoords = targetNode->coords();
+      if (!customRadius) {
+        sampleRadius = targetNode->sampleRadius();
+      }
       double sampleRadius = targetNode->sampleRadius();
       if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
         continue;
