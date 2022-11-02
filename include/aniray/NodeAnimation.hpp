@@ -31,16 +31,16 @@ public:
 
   NodeAnimation(NodeArrayT &nodeArray) : mNodeArray{nodeArray} {}
 
-  void frame() {
+  virtual void frame(double milliseconds) { // NOLINT(misc-unused-parameters)
     if (++mFrameCount == 0) {
       BOOST_LOG_TRIVIAL(debug)
           << typeid(*this).name() << ": Frame count looping to 0.";
     }
   }
 
-private:
-  size_t mFrameCount = std::numeric_limits<size_t>::max();
-  NodeArrayT &mNodeArray;
+protected:
+  size_t mFrameCount = std::numeric_limits<size_t>::max(); // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
+  NodeArrayT &mNodeArray; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
 };
 
 } // namespace aniray
