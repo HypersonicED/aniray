@@ -370,7 +370,7 @@ private:
           double z = static_cast<double>(k) * spacing + gridStart.z();
           Point newPoint(x, y, z);
           targetNodeArray.findNodesInRadiusOfSource(
-              newPoint, [newPoint, &nodes](std::shared_ptr<NodeT> targetNode) mutable -> bool { // NOLINT(misc-unused-parameters)
+              newPoint, [newPoint, &nodes]([[maybe_unused]] std::shared_ptr<NodeT> targetNode) mutable -> bool {
                 nodes.push_back(NodeT(newPoint, Point(0, 0, 0)));
                 return true;
               });

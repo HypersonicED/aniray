@@ -31,7 +31,7 @@ public:
 
   NodeAnimation(NodeArrayT &nodeArray) : mNodeArray{nodeArray} {}
 
-  virtual void frame(double milliseconds) { // NOLINT(misc-unused-parameters)
+  virtual void frame([[maybe_unused]] double milliseconds) {
     if (++mFrameCount == 0) {
       BOOST_LOG_TRIVIAL(debug)
           << typeid(*this).name() << ": Frame count looping to 0.";

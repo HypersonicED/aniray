@@ -27,12 +27,16 @@ add_library(
   ${CMAKE_PROJECT_NAME}
   include/aniray/DMXAddr.hpp
   include/aniray/Geometry.hpp
+  include/aniray/InputInterface.hpp
   include/aniray/Node.hpp
   include/aniray/NodeAnimation.hpp
   include/aniray/NodeArray.hpp
   include/aniray/NodeArrayOutput.hpp
   include/aniray/NodeArraySampler.hpp
-  src/DMXAddr.cpp)
+  include/aniray/PeriodicThread.hpp
+  src/DMXAddr.cpp
+  src/InputInterface.cpp
+  src/PeriodicThread.cpp)
 add_library("${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}" ALIAS "${CMAKE_PROJECT_NAME}")
 
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)
@@ -62,7 +66,7 @@ if(ANIRAY_WITH_LINT)
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES
-    CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE};-Xiwyu;--cxx17ns"
+    CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE};-Xiwyu;--cxx17ns;-Xiwyu;--mapping_file=${CMAKE_CURRENT_SOURCE_DIR}/lib/boost-1.75-all.imp"
     CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
 endif()
 

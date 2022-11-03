@@ -17,6 +17,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <boost/log/core/record.hpp>
@@ -69,7 +70,7 @@ class NodeArrayOutputOLAThread : public ola::thread::Thread {
 
     void updateData(std::vector<ola::DmxBuffer> buffers) {
       const std::lock_guard<std::mutex> lock(mUpdateMutex);
-      mBuffers = buffers;  // NOLINT
+      mBuffers = std::move(buffers);
     }
 
   protected:
