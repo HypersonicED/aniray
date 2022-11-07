@@ -30,6 +30,13 @@ semantic versioning.
   frames. This allows for a consistent experience across hardware platforms of
   varying processing power. If a machine is not up to the task, then it will be
   immediately obvious instead of slowing down.
+- **Open Source for Unrestricted Use:** Aniray promotes the idea that the
+  technical tools and resources to create art should be free and open (with
+  attribution) while understanding that creative and artistic practice may
+  remain proprietary to the artist. Aniray aims to separate the technical
+  boilerplate from the creative process and lower the bar to enter the creative
+  process. Aniray does not depend on resources that require open sourcing the
+  creative code.
 
 ## Key Terminology
  - **Node:** A Node is a control point in an installation in physical space.
@@ -111,3 +118,26 @@ semantic versioning.
      ```bash
      cmake -H. -B_builds/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
      ```
+
+## License
+
+Copyright (c) 2022 Hypersonic
+Copyright (c) 2022 Perry Naseck
+All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of the Apache 2.0 license may also be found in the LICENSE file in the
+root directory of this source tree.
+
+SPDX-License-Identifier: Apache-2.0
