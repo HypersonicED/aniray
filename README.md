@@ -18,7 +18,6 @@ Aniray is a library for animating and orchestrating large arrays of emitters, ac
 - OpenSSL >= 1.1.0 (OpenSSL License)
 - libola >= 0.10.8 (LGPL) or turn off with `-DANIRAY_WITHOUT_OLA=ON` and bring your own output
 - Bundled requirements (Git submodules):
-  - [dmilos/color](https://github.com/dmilos/color) (Apache-2.0 License)
   - [ben-strasser/fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser) (BSD-3-Clause License)
 
 ## Build and Lint Requirements

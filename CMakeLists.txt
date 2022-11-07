@@ -77,7 +77,6 @@ target_include_directories(
 
 target_include_directories(${CMAKE_PROJECT_NAME}
                            PRIVATE lib/fast-cpp-csv-parser)
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE lib/color/src)
 
 set(TARGETS_EXPORT_NAME "${CMAKE_PROJECT_NAME}Config")
 install(
