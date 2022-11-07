@@ -119,8 +119,9 @@ semantic versioning.
      cmake -H. -B_builds/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
      ```
 
-## License
+## License Notice
 
+```
 Copyright (c) 2022 Hypersonic
 Copyright (c) 2022 Perry Naseck
 All rights reserved.
@@ -141,3 +142,4 @@ A copy of the Apache 2.0 license may also be found in the LICENSE file in the
 root directory of this source tree.
 
 SPDX-License-Identifier: Apache-2.0
+```
