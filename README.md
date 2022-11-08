@@ -3,7 +3,7 @@ Aniray
 [Aniray](https://github.com/HypersonicED/aniray) is a library for animating and
 orchestrating large arrays of emitters, actuators, displays, and more.
 
-**NOTE:** This library is under active development and is currently prone to
+> **NOTE:** This library is under active development and is currently prone to
 large breaking changes. Following the first release Aniray will conform to
 semantic versioning.
 
@@ -20,12 +20,12 @@ semantic versioning.
 - **Standards Driven, Hardware Independent:** Exact hardware components vary
   from project to project, and sometimes original parts aren't available when
   repairs are necessary. Rather than picking specific or proprietary products,
-  this library aims to support broadly-supported standards that allow for the
-  most flexibility.
-- **Abstracted and Extensible:** Most C++ classes in Aniray provide support for
-  a particular function or task are extended from broader base classes. This
-  promotes user extensibility of Aniray and open source contribution to the
-  library.
+  this library aims to use broadly-supported standards that allow for the most
+  flexibility.
+- **Abstracted and Extensible:** Most C++ classes in Aniray that provide
+  support for a particular function or task are extended from broader base
+  classes. This promotes user extensibility of Aniray and open source
+  contribution to the library.
 - **Time-based Processing:** Tasks are performed in reference to time, not
   frames. This allows for a consistent experience across hardware platforms of
   varying processing power. If a machine is not up to the task, then it will be
@@ -83,11 +83,13 @@ semantic versioning.
 - Only tested on Linux, but may work on other platforms
 - C++17
 - clang or gcc, untested on other platforms
-- Boost >= 1.74.0 (Boost Software License)
-- OpenSSL >= 1.1.0 (OpenSSL License)
-- libola >= 0.10.8 (LGPL) or turn off with `-DANIRAY_WITHOUT_OLA=ON` and bring
+- [Boost](https://www.boost.org/) >= 1.74.0 (Boost Software License)
+- [OpenSSL](https://www.openssl.org/) >= 1.1.0 (OpenSSL License)
+- [libola](https://docs.openlighting.org/ola/doc/latest/index.html) >= 0.10.8
+  (LGPL) or turn off with `-DANIRAY_WITHOUT_OLA=ON` and bring
   or contribute your own output
-- libmodbus >= 3.1.6 (LGPL) or turn off with `-DANIRAY_WITHOUT_MODBUS=ON` and
+- [libmodbus](https://libmodbus.org/) >= 3.1.6 (LGPL) or turn off with
+  `-DANIRAY_WITHOUT_MODBUS=ON` and
   or contribute bring your own IO
 - Bundled requirements (Git submodules):
   - [ben-strasser/fast-cpp-csv-parser](
