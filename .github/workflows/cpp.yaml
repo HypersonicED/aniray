@@ -54,7 +54,7 @@ jobs:
           CXX: "/usr/bin/clang++"
         run: cmake -H. -B_builds/Debug -DCMAKE_BUILD_TYPE=Debug -DANIRAY_WITH_LINT=ON && cmake --build _builds/Debug --parallel ${{ steps.num-cpu-cores.outputs.NUM_CPU_CORES }}
       - name: Display structure of build files
-        run: ls -R
+        run: ls -alR
         working-directory: _builds
       - name: SHA256 files
         run: find . -type f -exec sha256sum {} \;
@@ -97,7 +97,7 @@ jobs:
           CXX: ${{ matrix.compiler.CXX }}
         run: cmake -H. -B_builds/${{ matrix.build_type }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} && cmake --build _builds/${{ matrix.build_type }} --parallel ${{ steps.num-cpu-cores.outputs.NUM_CPU_CORES }}
       - name: Display structure of build files
-        run: ls -R
+        run: ls -alR
         working-directory: _builds
       - name: SHA256 files
         run: find . -type f -exec sha256sum {} \;
