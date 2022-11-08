@@ -33,7 +33,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <boost/log/core/record.hpp>
@@ -41,13 +40,10 @@
 #include <boost/log/trivial.hpp>
 #include <boost/preprocessor/seq/enum.hpp>
 #include <boost/preprocessor/seq/size.hpp>
-#include <ola/Callback.h>
 #include <ola/Clock.h>
 #include <ola/DmxBuffer.h>
 #include <ola/Logging.h>
-#include <ola/client/ClientArgs.h>
 #include <ola/client/ClientWrapper.h>
-#include <ola/client/OlaClient.h>
 #include <ola/io/SelectServer.h>
 #include <ola/thread/Thread.h>
 
@@ -63,42 +59,16 @@ using std::uint8_t;
 
 class NodeArrayOutputOLAThread : public ola::thread::Thread {
   public:
-    NodeArrayOutputOLAThread(const Options &options)
-      : ola::thread::Thread(options) {}
+    NodeArrayOutputOLAThread(const Options &options);
 
     auto Start(const ola::TimeInterval &period,
-               std::unordered_map<uint32_t, size_t> &universesToBuffers) -> bool {
-      mPeriod = period;
-      mUniversesToBuffers = universesToBuffers;
-      if (!mOLAClientWrapper.Setup()) {
-        return false;
-      }
-      return ola::thread::Thread::Start();
-    }
-
-    void Stop() {
-      mOLAClientWrapper.GetSelectServer()->Terminate();
-    }
-
-    auto GetSelectServer() -> ola::io::SelectServer* {
-      return mOLAClientWrapper.GetSelectServer();
-    }
-
-    void updateData(std::vector<ola::DmxBuffer> buffers) {
-      const std::lock_guard<std::mutex> lock(mUpdateMutex);
-      mBuffers = std::move(buffers);
-    }
+               std::unordered_map<uint32_t, size_t> &universesToBuffers) -> bool;
+    void Stop();
+    auto GetSelectServer() -> ola::io::SelectServer*;
+    void updateData(std::vector<ola::DmxBuffer> buffers);
 
   protected:
-    auto Run() -> void* override {
-      mOLAClientWrapper.GetSelectServer()->RegisterRepeatingTimeout(
-        mPeriod,
-        ola::NewCallback(
-          this,
-          &NodeArrayOutputOLAThread::InternalSendUniverses));
-      mOLAClientWrapper.GetSelectServer()->Run();
-      return nullptr;
-    }
+    auto Run() -> void* override;
 
   private:
     ola::client::OlaClientWrapper mOLAClientWrapper;
@@ -107,17 +77,7 @@ class NodeArrayOutputOLAThread : public ola::thread::Thread {
     std::vector<ola::DmxBuffer> mBuffers;
     std::mutex mUpdateMutex;
 
-    auto InternalSendUniverses() -> bool {
-      auto *olaClient = mOLAClientWrapper.GetClient();
-      const std::lock_guard<std::mutex> lock(mUpdateMutex);
-      for (auto const &[universe, i] : mUniversesToBuffers) {
-        if (i >= mBuffers.size()) {
-          continue;
-        }
-        olaClient->SendDMX(universe, mBuffers[i], ola::client::SendDMXArgs());
-      }
-      return true;
-    }
+    auto InternalSendUniverses() -> bool;
 };
 
 template <typename NodeArrayT, auto DataToOutput>

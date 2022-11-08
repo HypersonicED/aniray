@@ -73,7 +73,9 @@ set_target_properties(
 
 if(NOT ANIRAY_WITHOUT_OLA)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
-  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/NodeArrayOutputOLA.hpp)
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  include/aniray/NodeArrayOutputOLA.hpp
+  src/NodeArrayOutputOLA.cpp)
 endif()
 
 if(ANIRAY_WITH_LINT)
@@ -85,9 +87,6 @@ if(ANIRAY_WITH_LINT)
   src/lintHelpers/NodeArray.cpp
   src/lintHelpers/NodeArrayOutput.cpp
   src/lintHelpers/NodeArraySampler.cpp)
-  if(NOT ANIRAY_WITHOUT_OLA)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/NodeArrayOutputOLA.cpp)
-  endif()
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES

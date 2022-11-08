@@ -32,12 +32,9 @@
 
 namespace aniray {
 
-using std::uint32_t;
-using std::uint8_t;
-
 struct DMXAddr {
-  uint32_t mUniverse;
-  uint8_t mAddr;
+  std::uint32_t mUniverse;
+  std::uint8_t mAddr;
 };
 
 auto operator<<(std::ostream &out, const DMXAddr &d) -> std::ostream &;

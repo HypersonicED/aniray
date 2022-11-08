@@ -48,8 +48,6 @@
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/centroid.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp> // IWYU pragma: keep
-#include <boost/geometry/algorithms/detail/comparable_distance/interface.hpp>
-#include <boost/geometry/algorithms/detail/envelope/interface.hpp>
 #include <boost/geometry/algorithms/envelope.hpp> // IWYU pragma: keep
 #include <boost/geometry/algorithms/transform.hpp>
 #include <boost/geometry/io/dsv/write.hpp>

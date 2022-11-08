@@ -34,9 +34,6 @@
 
 namespace aniray {
 
-using std::uint32_t;
-using std::uint8_t;
-
 template <typename NodeArrayT, auto DataToOutput> class NodeArrayOutput {
 public:
   using InnerNodeArrayT = NodeArrayT;
@@ -65,7 +62,8 @@ public:
   }
 
 protected:
-  virtual void setChannel(uint32_t universe, uint8_t channel, uint8_t data) {}
+  virtual void setChannel(std::uint32_t universe, std::uint8_t channel,
+                          std::uint8_t data) {}
   virtual auto sendData() -> bool { return false; }
 
 private:
