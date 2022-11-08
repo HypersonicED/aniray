@@ -23,12 +23,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: CPP
+name: cpp
 on: [push, pull_request]
 
 jobs:
   lint-build-clang:
-    name: Lint Debug clang
+    name: lint-build-clang
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
@@ -60,7 +60,7 @@ jobs:
         run: find . -type f -exec sha256sum {} \;
         working-directory: _builds
   build:
-    name: Build ${{ matrix.build_type }} ${{ matrix.compiler.name }}
+    name: build-${{ matrix.build_type }}-debian11-${{ matrix.compiler.name }}-amd64
     strategy:
       fail-fast: false
       matrix:
@@ -104,5 +104,5 @@ jobs:
         working-directory: _builds
       - uses: actions/upload-artifact@v3
         with:
-          name: build-${{ matrix.build_type }}-${{ matrix.compiler.name }}
+          name: build-${{ matrix.build_type }}-debian11-${{ matrix.compiler.name }}-amd64
           path: _builds/${{ matrix.build_type }}/*
