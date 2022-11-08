@@ -99,8 +99,8 @@ semantic versioning.
 
 - CMake
 - pkg-config
-- `iwyu` (include-what-you-use) with `-DANIRAY_WITH_LINT=ON`
-- `clang-tidy` with `-DANIRAY_WITH_LINT=ON`
+- `iwyu` >= 0.15 (include-what-you-use) with `-DANIRAY_WITH_LINT=ON`
+- `clang-tidy` >= 13.0.0 with `-DANIRAY_WITH_LINT=ON`
 
 ## Using
 

@@ -45,9 +45,9 @@ jobs:
         with:
           submodules: 'recursive'
       - name: Install Build Dependencies
-        run: sudo apt-get install -y cmake build-essential gdb clang
-      - name: Install App Dependencies
-        run: sudo apt-get install -y libola-dev libboost-dev libboost-log-dev libssl-dev libmodbus-dev
+        run: sudo apt-get install -y cmake build-essential gdb clang g++ pkg-config libola-dev libboost-dev libboost-log-dev libssl-dev libmodbus-dev
+      - name: Install Lint Dependencies
+        run: sudo apt-get install -y clang-tidy-13 iwyu
       - name: Build and Lint Aniray
         env:
           CC: "/usr/bin/clang"
@@ -90,9 +90,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: Install Build Dependencies
-        run: sudo apt-get install -y cmake build-essential gdb clang g++
-      - name: Install App Dependencies
-        run: sudo apt-get install -y libola-dev libboost-dev libboost-log-dev libssl-dev libmodbus-dev
+        run: sudo apt-get install -y cmake build-essential gdb clang g++ pkg-config libola-dev libboost-dev libboost-log-dev libssl-dev libmodbus-dev
       - name: Build Aniray
         env:
           CC: ${{ matrix.compiler.CC }}
