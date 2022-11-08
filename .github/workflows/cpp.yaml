@@ -35,7 +35,7 @@ jobs:
     container: "debian:bullseye"
     steps:
       - name: Get number of CPU cores
-        run: echo "::set-output name=NUM_CPU_CORES::$(grep -c processor /proc/cpuinfo)"
+        run: echo "NUM_CPU_CORES=$(grep -c processor /proc/cpuinfo)" >> $GITHUB_OUTPUT
         id: num-cpu-cores
       - name: Update apt
         run: apt-get update
@@ -80,7 +80,7 @@ jobs:
     container: "debian:bullseye"
     steps:
       - name: Get number of CPU cores
-        run: echo "::set-output name=NUM_CPU_CORES::$(grep -c processor /proc/cpuinfo)"
+        run: echo "NUM_CPU_CORES=$(grep -c processor /proc/cpuinfo)" >> $GITHUB_OUTPUT
         id: num-cpu-cores
       - name: Update apt
         run: apt-get update
