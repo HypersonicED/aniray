@@ -34,7 +34,6 @@ option(ANIRAY_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
 option(ANIRAY_WITHOUT_MODBUS "Build without Modbus" NO)
 option(ANIRAY_WITH_LINT "Run clang-tidy and iwyu" NO)
 
-add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(Boost 1.74.0 REQUIRED COMPONENTS log)
 find_package(OpenSSL 1.1.0 REQUIRED)
 
@@ -65,6 +64,7 @@ add_library(
   include/aniray/NodeArrayOutput.hpp
   include/aniray/NodeArraySampler.hpp
   include/aniray/PeriodicThread.hpp
+  lib/fast-cpp-csv-parser/csv.h
   src/DMXAddr.cpp
   src/IOInterface.cpp
   src/PeriodicThread.cpp)
@@ -113,8 +113,17 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:include>)
 
-target_include_directories(${CMAKE_PROJECT_NAME}
-                           PRIVATE lib/fast-cpp-csv-parser)
+target_include_directories(
+  ${CMAKE_PROJECT_NAME}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/fast-cpp-csv-parser>
+         $<INSTALL_INTERFACE:include/fast-cpp-csv-parser>)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${LIBOLA_INCLUDE_DIRS})
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${Boost_LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBOLA_LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENSSL_LIBRARIES})
 
 set(TARGETS_EXPORT_NAME "${CMAKE_PROJECT_NAME}Config")
 install(

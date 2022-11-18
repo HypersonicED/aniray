@@ -61,8 +61,7 @@
 #include <openssl/evp.h>
 #include <openssl/ossl_typ.h>
 
-#include "csv.h"
-
+#include <csv.h>
 #include <aniray/DMXAddr.hpp>
 #include <aniray/Geometry.hpp>
 
