@@ -56,8 +56,8 @@ semantic versioning.
  - **Node Array Sampler:** A Node Array Sampler allows for sampling values from
    a dense Node Array to inform a less-dense Node Array. The sampling mapping
    can be found automatically by distance or can be defined statically.
- - **Input Interface:** An Input Interface is an interface to inputs to the
-   application. These can be discrete, counters, integers, etc.
+ - **IO Interface:** An IO Interface is an interface to inputs and outputs to
+   the application. These can be discrete, counters, integers, etc.
 
 ## Features
 
