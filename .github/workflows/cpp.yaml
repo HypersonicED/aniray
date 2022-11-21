@@ -23,12 +23,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: CPP
+name: cpp
 on: [push, pull_request]
 
 jobs:
   lint-build-clang:
-    name: Lint Debug clang
+    name: lint-build-clang
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
@@ -54,13 +54,13 @@ jobs:
           CXX: "/usr/bin/clang++"
         run: cmake -H. -B_builds/Debug -DCMAKE_BUILD_TYPE=Debug -DANIRAY_WITH_LINT=ON && cmake --build _builds/Debug --parallel ${{ steps.num-cpu-cores.outputs.NUM_CPU_CORES }}
       - name: Display structure of build files
-        run: ls -R
+        run: ls -alR
         working-directory: _builds
       - name: SHA256 files
         run: find . -type f -exec sha256sum {} \;
         working-directory: _builds
   build:
-    name: Build ${{ matrix.build_type }} ${{ matrix.compiler.name }}
+    name: build-${{ matrix.build_type }}-debian11-${{ matrix.compiler.name }}-amd64
     strategy:
       fail-fast: false
       matrix:
@@ -97,12 +97,12 @@ jobs:
           CXX: ${{ matrix.compiler.CXX }}
         run: cmake -H. -B_builds/${{ matrix.build_type }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} && cmake --build _builds/${{ matrix.build_type }} --parallel ${{ steps.num-cpu-cores.outputs.NUM_CPU_CORES }}
       - name: Display structure of build files
-        run: ls -R
+        run: ls -alR
         working-directory: _builds
       - name: SHA256 files
         run: find . -type f -exec sha256sum {} \;
         working-directory: _builds
       - uses: actions/upload-artifact@v3
         with:
-          name: build-${{ matrix.build_type }}-${{ matrix.compiler.name }}
+          name: build-${{ matrix.build_type }}-debian11-${{ matrix.compiler.name }}-amd64
           path: _builds/${{ matrix.build_type }}/*

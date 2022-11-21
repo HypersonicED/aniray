@@ -1,4 +1,4 @@
-/* InputInterface.cpp: Inputs to Aniray systems
+/* IOInterface.cpp: IO for Aniray systems
  *
  * Created by Perry Naseck on 2022-11-03.
  *
@@ -24,24 +24,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <cstdint>
-#include <mutex>
-#include <shared_mutex>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <utility>
-#include <vector>
 
-#include <aniray/InputInterface.hpp>
+#include <aniray/IOInterface.hpp>
 
-namespace aniray {
+namespace aniray::IOInterface {
 
-auto InputInterface::getInputs() const -> std::vector<std::uint16_t> {
-    const std::shared_lock<std::shared_mutex> lock(mInputsMutex);
-    return mInputs;
+auto IOInterface::getInputsDiscrete(const std::string &name) const -> std::shared_ptr<IOInterfaceInputDiscrete> {
+    return mInputsDiscrete.at(name);
 }
 
-void InputInterface::setInputs(std::vector<std::uint16_t> inputs) {
-    const std::unique_lock<std::shared_mutex> lock(mInputsMutex);
-    mInputs = std::move(inputs);
+void IOInterface::assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input) {
+    if (mInputsDiscrete.count(name) > 0) {
+        throw std::runtime_error("IOInterfaceModbus: Duplicate discrete input! Name: " + name);
+    }
+    mInputsDiscrete[name] = std::move(input);
 }
 
-} // namespace aniray
+} // namespace aniray::IOInterface

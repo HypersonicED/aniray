@@ -31,6 +31,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
     CACHE BOOL "Export all symbols")
 
 option(ANIRAY_WITHOUT_OLA "Build without Open Lighting Architecture" NO)
+option(ANIRAY_WITHOUT_MODBUS "Build without Modbus" NO)
 option(ANIRAY_WITH_LINT "Run clang-tidy and iwyu" NO)
 
 find_package(Boost 1.74.0 REQUIRED COMPONENTS log)
@@ -47,11 +48,16 @@ if(NOT ANIRAY_WITHOUT_OLA)
   pkg_check_modules(LIBOLA libola>=0.10.8 REQUIRED)
 endif()
 
+if(NOT ANIRAY_WITHOUT_MODBUS)
+  pkg_check_modules(LIBMODBUS libmodbus>=3.1.6 REQUIRED)
+endif()
+
 add_library(
   ${CMAKE_PROJECT_NAME}
   include/aniray/DMXAddr.hpp
   include/aniray/Geometry.hpp
-  include/aniray/InputInterface.hpp
+  include/aniray/IOInterface.hpp
+  include/aniray/IOInterfaceModbus.hpp
   include/aniray/Node.hpp
   include/aniray/NodeAnimation.hpp
   include/aniray/NodeArray.hpp
@@ -60,7 +66,7 @@ add_library(
   include/aniray/PeriodicThread.hpp
   lib/fast-cpp-csv-parser/csv.h
   src/DMXAddr.cpp
-  src/InputInterface.cpp
+  src/IOInterface.cpp
   src/PeriodicThread.cpp)
 add_library("${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}" ALIAS "${CMAKE_PROJECT_NAME}")
 
@@ -77,6 +83,10 @@ if(NOT ANIRAY_WITHOUT_OLA)
   include/aniray/NodeArrayOutputOLA.hpp
   src/NodeArrayOutputOLA.cpp)
 endif()
+if(NOT ANIRAY_WITHOUT_MODBUS)
+  # Private to avoid double linking https://stackoverflow.com/a/34533415
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/IOInterfaceModbus.hpp)
+endif()
 
 if(ANIRAY_WITH_LINT)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
@@ -87,6 +97,10 @@ if(ANIRAY_WITH_LINT)
   src/lintHelpers/NodeArray.cpp
   src/lintHelpers/NodeArrayOutput.cpp
   src/lintHelpers/NodeArraySampler.cpp)
+  if(NOT ANIRAY_WITHOUT_MODBUS)
+    # Private to avoid double linking https://stackoverflow.com/a/34533415
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/IOInterfaceModbus.cpp)
+  endif()
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES
