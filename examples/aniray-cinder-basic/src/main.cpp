@@ -62,7 +62,8 @@ const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
 const int SPHERE_SUBDIVISIONS = 30;
 const int SPHERE_RADIUS = 5;
-const float DRAW_SAMPLE_NODE_SIZE = 0.125f;
+const float DRAW_PHYSICAL_NODE_SIZE = 0.125f/2;
+const float DRAW_SAMPLE_NODE_SIZE = 0.125f/4;
 
 class ExampleAnirayCinderBasic : public ci::app::App
 {
@@ -142,7 +143,7 @@ void ExampleAnirayCinderBasic::setup()
 	mNodeArraySampler = std::make_unique<NodeArraySampler>(*mNodeArray, *mNodeArraySamples);
 
     // A basic rotation animation
-	mRotationAnimation = std::make_unique<RotationAnimation<NodeArray, ci::Color>>(*mNodeArraySamples, mNodeArray->center(), 15, 4000, 0, 2000);
+	mRotationAnimation = std::make_unique<RotationAnimation<NodeArray, ci::Color>>(*mNodeArraySamples, mNodeArray->center(), 2.5, 4000, 0, 1000);
 
     // Cinder settings
     setWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -237,6 +238,7 @@ void ExampleAnirayCinderBasic::draw()
 
 			gl::pushModelMatrix();
 			gl::translate(offset);
+			gl::scale(glm::vec3(DRAW_PHYSICAL_NODE_SIZE));
 			if (node->ignore()) { gl::color(Color(CM_RGB, 0, 0, 0)); }
 			else { gl::color(ColorA(node->data(), 1)); }
 			mSphere->draw();
@@ -256,7 +258,7 @@ void ExampleAnirayCinderBasic::draw()
 
 			gl::pushModelMatrix();
 			gl::translate(offset);
-			gl::scale(glm::vec3(DRAW_SAMPLE_NODE_SIZE, DRAW_SAMPLE_NODE_SIZE, DRAW_SAMPLE_NODE_SIZE));
+			gl::scale(glm::vec3(DRAW_SAMPLE_NODE_SIZE));
 			gl::color(ColorA(node->data(), 1));
 			mSphere->draw();
 			gl::popModelMatrix();
