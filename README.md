@@ -3,6 +3,8 @@ Aniray
 [Aniray](https://github.com/HypersonicED/aniray) is a library for animating and
 orchestrating large arrays of emitters, actuators, displays, and more.
 
+![Sampling Example Animation](./extras/sample-example-anim.webp)
+
 > **NOTE:** This library is under active development and is currently prone to
 large breaking changes. Following the first release Aniray will conform to
 semantic versioning.
