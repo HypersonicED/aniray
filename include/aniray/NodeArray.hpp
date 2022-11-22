@@ -245,28 +245,28 @@ public:
         continue;
       }
       Point targetCoords = targetNode->coords();
+      double useSampleRadius = sampleRadius;
       if (!customRadius) {
-        sampleRadius = targetNode->sampleRadius();
+        useSampleRadius = targetNode->sampleRadius();
       }
-      double sampleRadius = targetNode->sampleRadius();
-      if (std::abs(targetCoords.x() - sourceCoords.x()) > sampleRadius) {
+      if (std::abs(targetCoords.x() - sourceCoords.x()) > useSampleRadius) {
         continue;
       }
-      if (std::abs(targetCoords.y() - sourceCoords.y()) > sampleRadius) {
+      if (std::abs(targetCoords.y() - sourceCoords.y()) > useSampleRadius) {
         continue;
       }
-      if (std::abs(targetCoords.z() - sourceCoords.z()) > sampleRadius) {
+      if (std::abs(targetCoords.z() - sourceCoords.z()) > useSampleRadius) {
         continue;
       }
-      if (comparableDistances.count(sampleRadius) <= 0) {
-        comparableDistances[sampleRadius] =
+      if (comparableDistances.count(useSampleRadius) <= 0) {
+        comparableDistances[useSampleRadius] =
             boost::geometry::comparable_distance(
-                Point(targetCoords.x() - sampleRadius, targetCoords.y(),
+                Point(targetCoords.x() - useSampleRadius, targetCoords.y(),
                       targetCoords.z()),
                 targetCoords);
       }
       double compare = 0;
-      compare = comparableDistances[sampleRadius];
+      compare = comparableDistances[useSampleRadius];
       double distance =
           boost::geometry::comparable_distance(sourceCoords, targetCoords);
       if (distance > compare) {
