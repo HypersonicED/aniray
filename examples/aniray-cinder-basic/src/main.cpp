@@ -58,12 +58,12 @@ const float MAX_FRAME_RATE = 240;
 const std::string LED_CSV_FILE_NAME = "leds.csv";
 const double SAMPLE_GRID_SPACING = 0.5;
 const std::int64_t OUTPUT_OLA_INTERVAL_US = 27500;
-const int WINDOW_WIDTH = 1280;
-const int WINDOW_HEIGHT = 720;
+const int WINDOW_WIDTH = 1920;
+const int WINDOW_HEIGHT = 1080;
 const int SPHERE_SUBDIVISIONS = 30;
 const int SPHERE_RADIUS = 5;
-const float DRAW_PHYSICAL_NODE_SIZE = 0.125f/2;
-const float DRAW_SAMPLE_NODE_SIZE = 0.125f/4;
+const float DRAW_PHYSICAL_NODE_SIZE = 0.125f/5;
+const float DRAW_SAMPLE_NODE_SIZE = 0.125f/20;
 
 class ExampleAnirayCinderBasic : public ci::app::App
 {
@@ -110,7 +110,7 @@ class ExampleAnirayCinderBasic : public ci::app::App
 	std::unique_ptr<NodeArray> mNodeArraySamples;
 	std::unique_ptr<NodeArrayOutputOLA> mNodeArrayOutput;
 	std::unique_ptr<NodeArraySampler> mNodeArraySampler;
-	std::unique_ptr<RotationAnimation<NodeArray, ci::Color>> mRotationAnimation;
+	std::unique_ptr<RotationAnimation<NodeArray>> mRotationAnimation;
 };
 
 void ExampleAnirayCinderBasic::prepareSettings(ci::app::App::Settings* settings)
@@ -121,7 +121,7 @@ void ExampleAnirayCinderBasic::prepareSettings(ci::app::App::Settings* settings)
 
 void ExampleAnirayCinderBasic::resetCamera() {
 	mCam.lookAt(
-		glm::vec3(center[0]/4, center[1]*4, center[2]/4),
+		glm::vec3(center[0] + 0, center[1]/5 + 18, center[2] + 12),
 		center
 	);
 }
@@ -143,7 +143,7 @@ void ExampleAnirayCinderBasic::setup()
 	mNodeArraySampler = std::make_unique<NodeArraySampler>(*mNodeArray, *mNodeArraySamples);
 
     // A basic rotation animation
-	mRotationAnimation = std::make_unique<RotationAnimation<NodeArray, ci::Color>>(*mNodeArraySamples, mNodeArray->center(), 2.5, 4000, 0, 1000);
+	mRotationAnimation = std::make_unique<RotationAnimation<NodeArray>>(*mNodeArraySamples, mNodeArray->center(), 2.5, 1.5, 4000, 0, 3000);
 
     // Cinder settings
     setWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -194,7 +194,7 @@ void ExampleAnirayCinderBasic::draw()
 	gl::clear();
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
-	gl::enableAlphaBlending();
+	gl::enableAlphaBlending(true);
 	gl::setMatrices(mCam);
 
     // Run the next frame of the animation
@@ -239,7 +239,7 @@ void ExampleAnirayCinderBasic::draw()
 			gl::pushModelMatrix();
 			gl::translate(offset);
 			gl::scale(glm::vec3(DRAW_PHYSICAL_NODE_SIZE));
-			if (node->ignore()) { gl::color(Color(CM_RGB, 0, 0, 0)); }
+			if (node->ignore()) { gl::color(ColorA(CM_RGB, 0, 0, 0, 1)); }
 			else { gl::color(ColorA(node->data(), 1)); }
 			mSphere->draw();
 			gl::popModelMatrix();

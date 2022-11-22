@@ -35,7 +35,7 @@
 
 using namespace aniray;
 
-template <typename NodeArrayT, typename NodeColor>
+template <typename NodeArrayT>
 class RotationAnimation : aniray::NodeAnimation<NodeArrayT> {
 	using NodeAnimation = aniray::NodeAnimation<NodeArrayT>;
 	using Point = aniray::Point;
@@ -45,10 +45,11 @@ class RotationAnimation : aniray::NodeAnimation<NodeArrayT> {
 
 	public:
 		RotationAnimation(NodeArrayT &nodeArray, Point origin,
-						  double radius, double periodMilliseconds, double height, double decay)
+						  double pathRadius, double sphereRadius, double periodMilliseconds, double height, double decay)
 			: NodeAnimation::NodeAnimation(nodeArray)
 			, mOrigin(origin)
-			, mRadius(radius)
+			, mPathRadius(pathRadius)
+			, mSphereRadius(sphereRadius)
 			, mPeriodMilliseconds(periodMilliseconds)
 			, mHeight(height)
 			, mDecay(decay) {}
@@ -59,38 +60,44 @@ class RotationAnimation : aniray::NodeAnimation<NodeArrayT> {
 			static double lastMilliseconds = 0;
 			double angle = (std::fmod(milliseconds, mPeriodMilliseconds) / mPeriodMilliseconds) * (2 * boost::math::constants::pi<double>());
 			mCurrentPosition = Point(
-				mRadius * std::cos(angle),
+				mPathRadius * std::cos(angle),
 				mHeight,
-				mRadius * std::sin(angle));
+				mPathRadius * std::sin(angle));
 			boost::geometry::add_point(mCurrentPosition, mOrigin);
 
 			float decay = static_cast<float>((milliseconds - lastMilliseconds) / mDecay);
 			for(std::shared_ptr<NodeT> node: mNodeArray.nodes()) {
-				NodeColor outColor = node->data() - NodeColor({decay, -decay, 0});
+				NodeColorT outColor = node->data() - NodeColorT({decay, 0, -decay});
 				if (outColor[0] < 0) {
-					outColor = NodeColor({0, 1, 0});
+					outColor = NodeColorT({0, 0, 1});
 				}
 				node->data(outColor);
 			}
 			mNodeArray.findNodesInRadiusOfSource(
 				mCurrentPosition,
 				[this](const std::shared_ptr<NodeT> targetNode) -> bool {
-					targetNode->data(NodeColorT({255,0,0}));
+					targetNode->data(NodeColorT({1,0,0}));
 					return false;
 				},
-				true, mRadius);
+				true, mSphereRadius);
 			lastMilliseconds = milliseconds;
 		}
 		void draw() {
-			cinder::gl::color(cinder::ColorA(cinder::CM_RGB, 1, 0, 0, 0.1));
+			cinder::gl::pushModelMatrix();
+			auto lambert = cinder::gl::ShaderDef().lambert().color();
+			cinder::gl::GlslProgRef shader = cinder::gl::getStockShader(lambert);
+			shader->bind();
+			cinder::gl::color(cinder::ColorA(1, 0, 0, 0.5));
 			cinder::gl::drawSphere(glm::vec3(
 				mCurrentPosition.x(),
 				mCurrentPosition.y(),
 				mCurrentPosition.z()
-			), mRadius);
+			), mSphereRadius, 30);
+			cinder::gl::popModelMatrix();
 		}
 	private:
-		double mRadius;
+		double mPathRadius;
+		double mSphereRadius;
 		double mPeriodMilliseconds;
 		double mHeight;
 		double mDecay;
