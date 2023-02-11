@@ -57,7 +57,6 @@ add_library(
   include/aniray/DMXAddr.hpp
   include/aniray/Geometry.hpp
   include/aniray/IOInterface.hpp
-  include/aniray/IOInterfaceModbus.hpp
   include/aniray/Node.hpp
   include/aniray/NodeAnimation.hpp
   include/aniray/NodeArray.hpp
@@ -85,7 +84,9 @@ if(NOT ANIRAY_WITHOUT_OLA)
 endif()
 if(NOT ANIRAY_WITHOUT_MODBUS)
   # Private to avoid double linking https://stackoverflow.com/a/34533415
-  target_sources(${CMAKE_PROJECT_NAME} PRIVATE include/aniray/IOInterfaceModbus.hpp)
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+  include/aniray/IOInterfaceModbus.hpp
+  src/IOInterfaceModbus.cpp)
 endif()
 
 if(ANIRAY_WITH_LINT)
@@ -97,10 +98,6 @@ if(ANIRAY_WITH_LINT)
   src/lintHelpers/NodeArray.cpp
   src/lintHelpers/NodeArrayOutput.cpp
   src/lintHelpers/NodeArraySampler.cpp)
-  if(NOT ANIRAY_WITHOUT_MODBUS)
-    # Private to avoid double linking https://stackoverflow.com/a/34533415
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/lintHelpers/IOInterfaceModbus.cpp)
-  endif()
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES

@@ -61,11 +61,11 @@ class IOInterfaceInput {
 //       https://en.cppreference.com/w/cpp/container/vector_bool
 using IOInterfaceInputDiscrete = IOInterfaceInput<bool>;
 
-class IOInterface {
+class IOInterfaceGeneric {
     public:
         [[nodiscard]] auto getInputsDiscrete(const std::string &name) const -> std::shared_ptr<IOInterfaceInputDiscrete>;
-    protected:
         virtual void refreshInputs() = 0;
+    protected:
         void assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input);
     private:
         std::unordered_map<std::string, std::shared_ptr<IOInterfaceInputDiscrete>> mInputsDiscrete;

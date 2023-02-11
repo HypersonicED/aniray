@@ -34,13 +34,13 @@
 
 namespace aniray::IOInterface {
 
-auto IOInterface::getInputsDiscrete(const std::string &name) const -> std::shared_ptr<IOInterfaceInputDiscrete> {
+auto IOInterfaceGeneric::getInputsDiscrete(const std::string &name) const -> std::shared_ptr<IOInterfaceInputDiscrete> {
     return mInputsDiscrete.at(name);
 }
 
-void IOInterface::assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input) {
+void IOInterfaceGeneric::assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input) {
     if (mInputsDiscrete.count(name) > 0) {
-        throw std::runtime_error("IOInterfaceModbus: Duplicate discrete input! Name: " + name);
+        throw std::runtime_error("IOInterfaceGeneric: Duplicate discrete input! Name: " + name);
     }
     mInputsDiscrete[name] = std::move(input);
 }
