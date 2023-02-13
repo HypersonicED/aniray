@@ -54,8 +54,9 @@ struct ConfigInputDiscrete {
   std::uint16_t numAddressedItems;
   bool enableClear;
   std::uint8_t clearFunctionCode;
-  bool clearSingleAddress;
-  std::uint16_t clearAddress;
+  std::uint16_t clearStartAddress;
+  bool onlyClearSingleAddress;
+  bool clearHigh;
 //   std::uint16_t clearNumAddressedItems;
 };
 
@@ -65,6 +66,14 @@ const std::uint8_t FUNCTION_CODE_READ_INPUT_BITS = 2;
 const std::uint8_t FUNCTION_CODE_READ_REGISTERS = 3;
 const std::uint8_t FUNCTION_CODE_READ_INPUT_REGISTERS = 4;
 const std::uint8_t FUNCTION_CODE_FORCE_SINGLE_COIL = 5;
+const std::uint8_t FUNCTION_CODE_FORCE_MULTIPLE_COILS = 15;
+const std::uint8_t FUNCTION_CODE_PRESET_SINGLE_REGISTERS = 6;
+const std::uint8_t FUNCTION_CODE_PRESET_MULTIPLE_REGISTERS = 16;
+
+const std::uint8_t CLEAR_BIT_VALUE_LOW = 0;
+const std::uint16_t CLEAR_REGISTER_VALUE_LOW = 0;
+const std::uint8_t CLEAR_BIT_VALUE_HIGH = 1;
+const std::uint16_t CLEAR_REGISTER_VALUE_HIGH = 1;
 
 class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
     public:
@@ -76,11 +85,17 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
                                 std::uint8_t functionCode,
                                 ConfigFunctionsAddressLayout addressLayout,
                                 std::uint16_t startAddress,
+                                std::uint16_t numAddressedItems);
+        void setupInputDiscrete(std::string name,
+                                std::uint8_t slaveID,
+                                std::uint8_t functionCode,
+                                ConfigFunctionsAddressLayout addressLayout,
+                                std::uint16_t startAddress,
                                 std::uint16_t numAddressedItems,
-                                bool enableClear = false,
-                                std::uint8_t clearFunctionCode = FUNCTION_CODE_FORCE_SINGLE_COIL,
-                                bool clearSingleAddress = false,
-                                std::uint16_t clearAddress = 0);
+                                std::uint8_t clearFunctionCode,
+                                std::uint16_t clearStartAddress,
+                                bool onlyClearSingleAddress,
+                                bool clearHigh);
     private:
         std::unordered_map<std::string, ConfigInputDiscrete> mInputsDiscreteModbus;
         mutable std::shared_mutex mMutexInputsDiscreteModbus;
@@ -88,6 +103,12 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
 
         void setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort);
         void updateInputDiscrete(ConfigInputDiscrete configInputDiscrete);
+        void setupInputDiscreteNoLock(std::string name,
+                                      std::uint8_t slaveID,
+                                      std::uint8_t functionCode,
+                                      ConfigFunctionsAddressLayout addressLayout,
+                                      std::uint16_t startAddress,
+                                      std::uint16_t numAddressedItems);
 
         // void updateInputsCounter(ConfigFunction functionConfig) {}
 };

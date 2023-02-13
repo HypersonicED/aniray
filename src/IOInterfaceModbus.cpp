@@ -65,31 +65,53 @@ void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t
                             << tcpAddress << ":" << tcpPort;
 }
 
+// WARNING: Not thread safe! Use setupInputDiscrete publicly!
+void IOInterfaceModbus::setupInputDiscreteNoLock(std::string name,
+                                                 std::uint8_t slaveID,
+                                                 std::uint8_t functionCode,
+                                                 ConfigFunctionsAddressLayout addressLayout,
+                                                 std::uint16_t startAddress,
+                                                 std::uint16_t numAddressedItems) {
+    assignInputDiscrete(name, std::make_shared<IOInterfaceInputDiscrete>());
+    // above call checks for duplicates
+    mInputsDiscreteModbus[name] = {
+        .name = name,
+        .slaveID = slaveID,
+        .functionCode = functionCode,
+        .addressLayout = addressLayout,
+        .startAddress = static_cast<std::uint16_t>(startAddress - 1U), // seems to always be off by one (starts at 0?)
+        .numAddressedItems = numAddressedItems,
+        .enableClear = false
+    };
+}
+void IOInterfaceModbus::setupInputDiscrete(std::string name,
+                                           std::uint8_t slaveID,
+                                           std::uint8_t functionCode,
+                                           ConfigFunctionsAddressLayout addressLayout,
+                                           std::uint16_t startAddress,
+                                           std::uint16_t numAddressedItems) {
+    const std::unique_lock<std::shared_mutex> lock(mMutexInputsDiscreteModbus);
+    // Use below instead of initializer so that mutex lock covers
+    setupInputDiscreteNoLock(name, slaveID, functionCode, addressLayout, startAddress, numAddressedItems);
+}
 void IOInterfaceModbus::setupInputDiscrete(std::string name,
                                            std::uint8_t slaveID,
                                            std::uint8_t functionCode,
                                            ConfigFunctionsAddressLayout addressLayout,
                                            std::uint16_t startAddress,
                                            std::uint16_t numAddressedItems,
-                                           bool enableClear,
                                            std::uint8_t clearFunctionCode,
-                                           bool clearSingleAddress,
-                                           std::uint16_t clearAddress) {
-    assignInputDiscrete(name, std::make_shared<IOInterfaceInputDiscrete>());
-    // above call checks for duplicates
+                                           std::uint16_t clearStartAddress,
+                                           bool onlyClearSingleAddress,
+                                           bool clearHigh) {
     const std::unique_lock<std::shared_mutex> lock(mMutexInputsDiscreteModbus);
-    mInputsDiscreteModbus[name] = {
-        name: name,
-        slaveID: slaveID,
-        functionCode: functionCode,
-        addressLayout: addressLayout,
-        startAddress: static_cast<std::uint16_t>(startAddress - 1U), // seems to always be off by one (starts at 0?)
-        numAddressedItems: numAddressedItems,
-        enableClear: enableClear,
-        clearFunctionCode: clearFunctionCode,
-        clearSingleAddress: clearSingleAddress,
-        clearAddress: clearAddress
-    };
+    // Use below instead of initializer so that mutex lock covers
+    setupInputDiscreteNoLock(name, slaveID, functionCode, addressLayout, startAddress, numAddressedItems);
+    mInputsDiscreteModbus[name].enableClear = true;
+    mInputsDiscreteModbus[name].clearFunctionCode = clearFunctionCode;
+    mInputsDiscreteModbus[name].clearStartAddress = static_cast<std::uint16_t>(clearStartAddress - 1U);
+    mInputsDiscreteModbus[name].onlyClearSingleAddress = onlyClearSingleAddress;
+    mInputsDiscreteModbus[name].clearHigh = clearHigh;
 }
 
 void IOInterfaceModbus::refreshInputs() {
@@ -106,28 +128,72 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
     }
     std::vector<std::uint8_t> dest8(configInputDiscrete.numAddressedItems);
     std::vector<std::uint16_t> dest16(configInputDiscrete.numAddressedItems);
+    int res_read = 0;
     switch (configInputDiscrete.functionCode) {
         case FUNCTION_CODE_READ_BITS:
-            modbus_read_bits(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest8[0]);
+            res_read = modbus_read_bits(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest8[0]);
             break;
 
         case FUNCTION_CODE_READ_INPUT_BITS:
-            modbus_read_input_bits(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest8[0]);
+            res_read = modbus_read_input_bits(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest8[0]);
             break;
 
         case FUNCTION_CODE_READ_REGISTERS:
-            modbus_read_registers(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest16[0]);
+            res_read = modbus_read_registers(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest16[0]);
             break;
 
         case FUNCTION_CODE_READ_INPUT_REGISTERS:
-            modbus_read_input_registers(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest16[0]);
+            res_read = modbus_read_input_registers(mCTX, configInputDiscrete.startAddress, configInputDiscrete.numAddressedItems, &dest16[0]);
             break;
-        
+
         default:
             throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
             break;
-        
     }
+    if (res_read == -1) {
+        throw std::runtime_error("IOInterfaceModbus: Error reading discrete values: " + std::string(modbus_strerror(errno)));
+    }
+
+    if (configInputDiscrete.enableClear) {
+        int res_clear = 0;
+        std::uint16_t numClear = configInputDiscrete.numAddressedItems;
+        if (configInputDiscrete.onlyClearSingleAddress) {
+            numClear = 1;
+        }
+        std::uint8_t clear8_value = CLEAR_BIT_VALUE_LOW;
+        std::uint16_t clear16_value = CLEAR_REGISTER_VALUE_LOW;
+        if (configInputDiscrete.clearHigh) {
+            clear8_value = CLEAR_BIT_VALUE_HIGH;
+            clear16_value = CLEAR_REGISTER_VALUE_HIGH;
+        }
+        std::vector<std::uint8_t> clear8(numClear, clear8_value);
+        std::vector<std::uint16_t> clear16(numClear, clear16_value);
+        switch (configInputDiscrete.clearFunctionCode) {
+            case FUNCTION_CODE_FORCE_SINGLE_COIL:
+                res_clear = modbus_write_bit(mCTX, configInputDiscrete.clearStartAddress, clear8_value);
+                break;
+
+            case FUNCTION_CODE_FORCE_MULTIPLE_COILS:
+                res_clear = modbus_write_bits(mCTX, configInputDiscrete.clearStartAddress, numClear, &clear8[0]);
+                break;
+
+            case FUNCTION_CODE_PRESET_SINGLE_REGISTERS:
+                res_clear = modbus_write_register(mCTX, configInputDiscrete.clearStartAddress, clear16_value);
+                break;
+
+            case FUNCTION_CODE_PRESET_MULTIPLE_REGISTERS:
+                res_clear = modbus_write_registers(mCTX, configInputDiscrete.clearStartAddress, numClear, &clear16[0]);
+                break;
+
+            default:
+                throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input clear function code!");
+                break;
+        }
+        if (res_read == -1) {
+            throw std::runtime_error("IOInterfaceModbus: Error clearing discrete values: " + std::string(modbus_strerror(errno)));
+        }
+    }
+
     std::vector<bool> out;
     switch (configInputDiscrete.addressLayout) {
         case ConfigFunctionsAddressLayout::ADDRESS:
@@ -154,8 +220,8 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
                 case FUNCTION_CODE_READ_BITS:
                 case FUNCTION_CODE_READ_INPUT_BITS:
                     for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t i = 0; i < 8; i++) {
-                            auto val = (dest8[i] >> i) & 1;
+                        for (std::size_t bit = 0; bit < 8; bit++) {
+                            auto val = (dest8[i] >> bit) & 1;
                             out.push_back(static_cast<bool>(val));
                         }
                     }
@@ -163,8 +229,8 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
                 case FUNCTION_CODE_READ_REGISTERS:
                 case FUNCTION_CODE_READ_INPUT_REGISTERS:
                     for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t i = 0; i < 16; i++) {
-                            auto val = (dest16[i] >> i) & 1;
+                        for (std::size_t bit = 0; bit < 16; bit++) {
+                            auto val = (dest16[i] >> bit) & 1;
                             out.push_back(static_cast<bool>(val));
                         }
                     }

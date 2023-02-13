@@ -35,10 +35,12 @@
 namespace aniray::IOInterface {
 
 auto IOInterfaceGeneric::getInputsDiscrete(const std::string &name) const -> std::shared_ptr<IOInterfaceInputDiscrete> {
+    const std::shared_lock<std::shared_mutex> lock(mMutexInputsDiscrete);
     return mInputsDiscrete.at(name);
 }
 
 void IOInterfaceGeneric::assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input) {
+    const std::unique_lock<std::shared_mutex> lock(mMutexInputsDiscrete);
     if (mInputsDiscrete.count(name) > 0) {
         throw std::runtime_error("IOInterfaceGeneric: Duplicate discrete input! Name: " + name);
     }

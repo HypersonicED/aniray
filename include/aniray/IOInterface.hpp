@@ -68,6 +68,7 @@ class IOInterfaceGeneric {
     protected:
         void assignInputDiscrete(const std::string &name, std::shared_ptr<IOInterfaceInputDiscrete> input);
     private:
+        mutable std::shared_mutex mMutexInputsDiscrete;
         std::unordered_map<std::string, std::shared_ptr<IOInterfaceInputDiscrete>> mInputsDiscrete;
 };
 
