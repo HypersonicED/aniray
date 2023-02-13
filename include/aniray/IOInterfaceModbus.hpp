@@ -24,13 +24,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef ANIRAY_INPUTINTERFACEMODBUS_HPP
-#define ANIRAY_INPUTINTERFACEMODBUS_HPP
+#ifndef ANIRAY_IOINTERFACEMODBUS_HPP
+#define ANIRAY_IOINTERFACEMODBUS_HPP
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <shared_mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <modbus/modbus.h>
@@ -38,9 +40,7 @@
 #include <aniray/IOInterface.hpp>
 #include <aniray/PeriodicThread.hpp>
 
-namespace aniray {
-namespace IOInterface {
-namespace Modbus {
+namespace aniray::IOInterface::Modbus {
 
 enum class ConfigFunctionsAddressLayout {
     ADDRESS, // each address is an input
@@ -72,6 +72,9 @@ const std::uint8_t FUNCTION_CODE_FORCE_MULTIPLE_COILS = 15;
 const std::uint8_t FUNCTION_CODE_PRESET_SINGLE_REGISTERS = 6;
 const std::uint8_t FUNCTION_CODE_PRESET_MULTIPLE_REGISTERS = 16;
 
+const std::size_t MODBUS_BITS_PER_BYTE = 8;
+const std::size_t MODBUS_BITS_PER_REGISTER = 16;
+
 const std::uint8_t CLEAR_BIT_VALUE_LOW = 0;
 const std::uint16_t CLEAR_REGISTER_VALUE_LOW = 0;
 const std::uint8_t CLEAR_BIT_VALUE_HIGH = 1;
@@ -82,13 +85,13 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         IOInterfaceModbus(std::string tcpAddress, std::uint16_t tcpPort);
         ~IOInterfaceModbus();
         void refreshInputs() override;
-        void setupInputDiscrete(std::string name,
+        void setupInputDiscrete(const std::string &name,
                                 std::uint8_t slaveID,
                                 std::uint8_t functionCode,
                                 ConfigFunctionsAddressLayout addressLayout,
                                 std::uint16_t startAddress,
                                 std::uint16_t numAddressedItems);
-        void setupInputDiscrete(std::string name,
+        void setupInputDiscrete(const std::string &name,
                                 std::uint8_t slaveID,
                                 std::uint8_t functionCode,
                                 ConfigFunctionsAddressLayout addressLayout,
@@ -104,8 +107,8 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         modbus_t *mCTX;
 
         void setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort);
-        void updateInputDiscrete(ConfigInputDiscrete configInputDiscrete);
-        void setupInputDiscreteNoLock(std::string name,
+        void updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete);
+        void setupInputDiscreteNoLock(const std::string &name,
                                       std::uint8_t slaveID,
                                       std::uint8_t functionCode,
                                       ConfigFunctionsAddressLayout addressLayout,
@@ -122,8 +125,6 @@ class IOInterfaceModbusThread : public IOInterfaceModbus, public aniray::Periodi
         void periodicAction() override;
 };
 
-} // namespace IOInterfaceModbus
-} // namespace IOInterface
-} // namespace aniray
+} // namespace aniray::IOInterface::Modbus
 
-#endif // ANIRAY_INPUTINTERFACEMODBUS_HPP
+#endif // ANIRAY_IOINTERFACEMODBUS_HPP

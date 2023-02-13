@@ -24,10 +24,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <cerrno>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <boost/log/core/record.hpp>
@@ -35,14 +42,14 @@
 #include <boost/log/trivial.hpp>
 #include <modbus/modbus.h>
 
+#include <aniray/IOInterface.hpp>
 #include <aniray/IOInterfaceModbus.hpp>
+#include <aniray/PeriodicThread.hpp>
 
-namespace aniray {
-namespace IOInterface {
-namespace Modbus {
+namespace aniray::IOInterface::Modbus {
 
 IOInterfaceModbus::IOInterfaceModbus(std::string tcpAddress, std::uint16_t tcpPort) {
-        setupConnectionTCP(tcpAddress, tcpPort);
+        setupConnectionTCP(std::move(tcpAddress), tcpPort);
 
         // Refresh inputs to initially populate values and confirm all addresses are reachable
         // refreshInputs();
@@ -55,9 +62,10 @@ IOInterfaceModbus::~IOInterfaceModbus() {
 
 void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort) {
     mCTX = modbus_new_tcp_pi(tcpAddress.c_str(), std::to_string(tcpPort).c_str());
-    if (mCTX == NULL) {
+    if (mCTX == nullptr) {
         throw std::runtime_error("IOInterfaceModbus: Unable to allocate libmodbus context");
-    } else if (modbus_connect(mCTX) == -1) {
+    }
+    if (modbus_connect(mCTX) == -1) {
         modbus_free(mCTX);
         throw std::runtime_error("IOInterfaceModbus: Connection failed: " + std::string(modbus_strerror(errno)));
     }
@@ -66,7 +74,7 @@ void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t
 }
 
 // WARNING: Not thread safe! Use setupInputDiscrete publicly!
-void IOInterfaceModbus::setupInputDiscreteNoLock(std::string name,
+void IOInterfaceModbus::setupInputDiscreteNoLock(const std::string &name,
                                                  std::uint8_t slaveID,
                                                  std::uint8_t functionCode,
                                                  ConfigFunctionsAddressLayout addressLayout,
@@ -84,7 +92,7 @@ void IOInterfaceModbus::setupInputDiscreteNoLock(std::string name,
         .enableClear = false
     };
 }
-void IOInterfaceModbus::setupInputDiscrete(std::string name,
+void IOInterfaceModbus::setupInputDiscrete(const std::string &name,
                                            std::uint8_t slaveID,
                                            std::uint8_t functionCode,
                                            ConfigFunctionsAddressLayout addressLayout,
@@ -94,7 +102,7 @@ void IOInterfaceModbus::setupInputDiscrete(std::string name,
     // Use below instead of initializer so that mutex lock covers
     setupInputDiscreteNoLock(name, slaveID, functionCode, addressLayout, startAddress, numAddressedItems);
 }
-void IOInterfaceModbus::setupInputDiscrete(std::string name,
+void IOInterfaceModbus::setupInputDiscrete(const std::string &name,
                                            std::uint8_t slaveID,
                                            std::uint8_t functionCode,
                                            ConfigFunctionsAddressLayout addressLayout,
@@ -122,7 +130,7 @@ void IOInterfaceModbus::refreshInputs() {
     // inputsDiscreteLock.unlock(); // will need this when other types of input are added
 }
 
-void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscrete) {
+void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete) {
     if (modbus_set_slave(mCTX, configInputDiscrete.slaveID) == -1) {
         throw std::runtime_error("IOInterfaceModbus: Invalid slave ID: " + std::to_string(configInputDiscrete.slaveID));
     }
@@ -189,7 +197,7 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
                 throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input clear function code!");
                 break;
         }
-        if (res_read == -1) {
+        if (res_clear == -1) {
             throw std::runtime_error("IOInterfaceModbus: Error clearing discrete values: " + std::string(modbus_strerror(errno)));
         }
     }
@@ -220,8 +228,8 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
                 case FUNCTION_CODE_READ_BITS:
                 case FUNCTION_CODE_READ_INPUT_BITS:
                     for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t bit = 0; bit < 8; bit++) {
-                            auto val = (dest8[i] >> bit) & 1;
+                        for (std::size_t bit = 0; bit < MODBUS_BITS_PER_BYTE; bit++) {
+                            auto val = static_cast<std::size_t>(dest8[i] >> bit) & 1U;
                             out.push_back(static_cast<bool>(val));
                         }
                     }
@@ -229,8 +237,8 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
                 case FUNCTION_CODE_READ_REGISTERS:
                 case FUNCTION_CODE_READ_INPUT_REGISTERS:
                     for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t bit = 0; bit < 16; bit++) {
-                            auto val = (dest16[i] >> bit) & 1;
+                        for (std::size_t bit = 0; bit < MODBUS_BITS_PER_REGISTER; bit++) {
+                            auto val = static_cast<std::size_t>(dest16[i] >> bit) & 1U;
                             out.push_back(static_cast<bool>(val));
                         }
                     }
@@ -270,13 +278,11 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
 }
 
 IOInterfaceModbusThread::IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs)
-    : IOInterfaceModbus(tcpAddress, tcpPort)
+    : IOInterfaceModbus(std::move(tcpAddress), tcpPort)
     , PeriodicThread(updateRateMs) {}
 
 void IOInterfaceModbusThread::periodicAction() {
     refreshInputs();
 }
 
-} // namespace Modbus
-} // namespace IOInterface
-} // namespace aniray
+} // namespace aniray::IOInterface::Modbus
