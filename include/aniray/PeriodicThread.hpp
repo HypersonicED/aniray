@@ -63,7 +63,7 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
         std::unique_ptr<boost::thread> mIOThread;
         mutable std::shared_mutex mUpdateRateMutex;
 
-        void timerHandler ();
+        void timerHandler();
 };
 
 } // namespace aniray

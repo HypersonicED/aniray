@@ -27,6 +27,7 @@
 #ifndef ANIRAY_INPUTINTERFACEMODBUS_HPP
 #define ANIRAY_INPUTINTERFACEMODBUS_HPP
 
+#include <chrono>
 #include <cstdint>
 #include <shared_mutex>
 #include <string>
@@ -35,6 +36,7 @@
 #include <modbus/modbus.h>
 
 #include <aniray/IOInterface.hpp>
+#include <aniray/PeriodicThread.hpp>
 
 namespace aniray {
 namespace IOInterface {
@@ -111,6 +113,13 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
                                       std::uint16_t numAddressedItems);
 
         // void updateInputsCounter(ConfigFunction functionConfig) {}
+};
+
+class IOInterfaceModbusThread : public IOInterfaceModbus, public aniray::PeriodicThread {
+    public:
+        IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs);
+    private:
+        void periodicAction() override;
 };
 
 } // namespace IOInterfaceModbus

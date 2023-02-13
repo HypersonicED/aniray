@@ -269,6 +269,14 @@ void IOInterfaceModbus::updateInputDiscrete(ConfigInputDiscrete configInputDiscr
     values->setValues(out);
 }
 
+IOInterfaceModbusThread::IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs)
+    : IOInterfaceModbus(tcpAddress, tcpPort)
+    , PeriodicThread(updateRateMs) {}
+
+void IOInterfaceModbusThread::periodicAction() {
+    refreshInputs();
+}
+
 } // namespace Modbus
 } // namespace IOInterface
 } // namespace aniray
