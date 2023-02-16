@@ -27,6 +27,7 @@
 #ifndef ANIRAY_IOINTERFACEMODBUS_HPP
 #define ANIRAY_IOINTERFACEMODBUS_HPP
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -118,11 +119,13 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         // void updateInputsCounter(ConfigFunction functionConfig) {}
 };
 
-class IOInterfaceModbusThread : public IOInterfaceModbus, public aniray::PeriodicThread {
+class IOInterfaceModbusThread : public IOInterfaceModbus, public PeriodicThread {
     public:
         IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs);
+        auto refreshHasErrored() -> bool;
     private:
         void periodicAction() override;
+        std::atomic<bool> mRefreshError = false;
 };
 
 } // namespace aniray::IOInterface::Modbus

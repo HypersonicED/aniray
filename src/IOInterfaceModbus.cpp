@@ -59,7 +59,7 @@ IOInterfaceModbus::~IOInterfaceModbus() {
     modbus_close(mCTX);
     modbus_free(mCTX);
 }
-
+// NOTE: This method relies on lock from calling function (or none if constructor)!
 void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort) {
     mCTX = modbus_new_tcp_pi(tcpAddress.c_str(), std::to_string(tcpPort).c_str());
     if (mCTX == nullptr) {
@@ -73,7 +73,7 @@ void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t
                             << tcpAddress << ":" << tcpPort;
 }
 
-// WARNING: Not thread safe! Use setupInputDiscrete publicly!
+// NOTE: This method relies on lock from calling function!
 void IOInterfaceModbus::setupInputDiscreteNoLock(const std::string &name,
                                                  std::uint8_t slaveID,
                                                  std::uint8_t functionCode,
@@ -130,6 +130,7 @@ void IOInterfaceModbus::refreshInputs() {
     // inputsDiscreteLock.unlock(); // will need this when other types of input are added
 }
 
+// NOTE: This method relies on lock from calling function!
 void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete) {
     if (modbus_set_slave(mCTX, configInputDiscrete.slaveID) == -1) {
         throw std::runtime_error("IOInterfaceModbus: Invalid slave ID: " + std::to_string(configInputDiscrete.slaveID));
@@ -282,7 +283,19 @@ IOInterfaceModbusThread::IOInterfaceModbusThread(std::string tcpAddress, std::ui
     , PeriodicThread(updateRateMs) {}
 
 void IOInterfaceModbusThread::periodicAction() {
-    refreshInputs();
+    try {
+        refreshInputs();
+    } catch (const std::exception &e) {
+        mRefreshError = true;
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusThread: Refresh error: " << e.what();
+    } catch (...) {
+        mRefreshError = true;
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusThread: Refresh error: Unknown";
+    }
+}
+
+auto IOInterfaceModbusThread::refreshHasErrored() -> bool {
+    return mRefreshError;
 }
 
 } // namespace aniray::IOInterface::Modbus
