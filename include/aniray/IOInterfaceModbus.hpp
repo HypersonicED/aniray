@@ -85,6 +85,14 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
     public:
         IOInterfaceModbus(std::string tcpAddress, std::uint16_t tcpPort);
         ~IOInterfaceModbus();
+
+        IOInterfaceModbus(IOInterfaceModbus&) = delete; // copy constructor
+        IOInterfaceModbus(const IOInterfaceModbus&) = delete; // copy constructor
+        IOInterfaceModbus(IOInterfaceModbus&&) = delete;  // move constructor
+        auto operator=(IOInterfaceModbus&) -> IOInterfaceModbus& = delete;  // copy assignment
+        auto operator=(const IOInterfaceModbus&) -> IOInterfaceModbus& = delete;  // copy assignment
+        auto operator=(IOInterfaceModbus&&) noexcept -> IOInterfaceModbus& = delete;  // move assignment
+
         void refreshInputs() override;
         void setupInputDiscrete(const std::string &name,
                                 std::uint8_t slaveID,
@@ -108,6 +116,22 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         modbus_t *mCTX;
 
         void setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort);
+        void updateInputDiscreteModbusRead(const ConfigInputDiscrete &configInputDiscrete,
+                                           std::vector<std::uint8_t> &dest8,
+                                           std::vector<std::uint16_t> &dest16);
+        void updateInputDiscreteModbusClear(const ConfigInputDiscrete &configInputDiscrete);
+        static void updateInputDiscreteModbusTransformAddress(const ConfigInputDiscrete &configInputDiscrete,
+                                                              std::vector<std::uint8_t> &dest8,
+                                                              std::vector<std::uint16_t> &dest16,
+                                                              std::vector<bool> &out);
+        static void updateInputDiscreteModbusTransformBitsLSB(const ConfigInputDiscrete &configInputDiscrete,
+                                                              std::vector<std::uint8_t> &dest8,
+                                                              std::vector<std::uint16_t> &dest16,
+                                                              std::vector<bool> &out);
+        static void updateInputDiscreteModbusTransformSpan2LSB(const ConfigInputDiscrete &configInputDiscrete,
+                                                               std::vector<std::uint8_t> &dest8,
+                                                               std::vector<std::uint16_t> &dest16,
+                                                               std::vector<bool> &out);
         void updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete);
         void setupInputDiscreteNoLock(const std::string &name,
                                       std::uint8_t slaveID,

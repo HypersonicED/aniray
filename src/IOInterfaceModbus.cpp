@@ -24,10 +24,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <atomic>
 #include <cerrno>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <exception> // IWYU pragma: keep
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -36,11 +38,16 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+// IWYU pragma: no_include <bits/exception.h>
+// IWYU pragma: no_include <iosfwd>
 
 #include <boost/log/core/record.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/trivial.hpp>
 #include <modbus/modbus.h>
+// IWYU pragma: no_include <boost/log/sinks/basic_sink_frontend.hpp>
+// IWYU pragma: no_include <boost/preprocessor/seq/enum.hpp>
+// IWYU pragma: no_include <boost/preprocessor/seq/size.hpp>
 
 #include <aniray/IOInterface.hpp>
 #include <aniray/IOInterfaceModbus.hpp>
@@ -131,12 +138,9 @@ void IOInterfaceModbus::refreshInputs() {
 }
 
 // NOTE: This method relies on lock from calling function!
-void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete) {
-    if (modbus_set_slave(mCTX, configInputDiscrete.slaveID) == -1) {
-        throw std::runtime_error("IOInterfaceModbus: Invalid slave ID: " + std::to_string(configInputDiscrete.slaveID));
-    }
-    std::vector<std::uint8_t> dest8(configInputDiscrete.numAddressedItems);
-    std::vector<std::uint16_t> dest16(configInputDiscrete.numAddressedItems);
+void IOInterfaceModbus::updateInputDiscreteModbusRead(const ConfigInputDiscrete &configInputDiscrete,
+                                                      std::vector<std::uint8_t> &dest8,
+                                                      std::vector<std::uint16_t> &dest16) {
     int res_read = 0;
     switch (configInputDiscrete.functionCode) {
         case FUNCTION_CODE_READ_BITS:
@@ -162,7 +166,10 @@ void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInp
     if (res_read == -1) {
         throw std::runtime_error("IOInterfaceModbus: Error reading discrete values: " + std::string(modbus_strerror(errno)));
     }
+}
 
+// NOTE: This method relies on lock from calling function!
+void IOInterfaceModbus::updateInputDiscreteModbusClear(const ConfigInputDiscrete &configInputDiscrete) {
     if (configInputDiscrete.enableClear) {
         int res_clear = 0;
         std::uint16_t numClear = configInputDiscrete.numAddressedItems;
@@ -202,74 +209,110 @@ void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInp
             throw std::runtime_error("IOInterfaceModbus: Error clearing discrete values: " + std::string(modbus_strerror(errno)));
         }
     }
+}
+
+// NOTE: This method relies on lock from calling function!
+void IOInterfaceModbus::updateInputDiscreteModbusTransformAddress(const ConfigInputDiscrete &configInputDiscrete,
+                                                                  std::vector<std::uint8_t> &dest8,
+                                                                  std::vector<std::uint16_t> &dest16,
+                                                                  std::vector<bool> &out) {
+    switch (configInputDiscrete.functionCode) {
+        case FUNCTION_CODE_READ_BITS:
+        case FUNCTION_CODE_READ_INPUT_BITS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
+                out.push_back(static_cast<bool>(dest8[i]));
+            }
+            break;
+        case FUNCTION_CODE_READ_REGISTERS:
+        case FUNCTION_CODE_READ_INPUT_REGISTERS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
+                out.push_back(static_cast<bool>(dest16[i]));
+            }
+            break;
+        default:
+            throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
+            break;
+    }
+}
+
+// NOTE: This method relies on lock from calling function!
+void IOInterfaceModbus::updateInputDiscreteModbusTransformBitsLSB(const ConfigInputDiscrete &configInputDiscrete,
+                                                                  std::vector<std::uint8_t> &dest8,
+                                                                  std::vector<std::uint16_t> &dest16,
+                                                                  std::vector<bool> &out) {
+    switch (configInputDiscrete.functionCode) {
+        case FUNCTION_CODE_READ_BITS:
+        case FUNCTION_CODE_READ_INPUT_BITS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
+                for (std::size_t bit = 0; bit < MODBUS_BITS_PER_BYTE; bit++) {
+                    auto val = static_cast<std::size_t>(dest8[i] >> bit) & 1U;
+                    out.push_back(static_cast<bool>(val));
+                }
+            }
+            break;
+        case FUNCTION_CODE_READ_REGISTERS:
+        case FUNCTION_CODE_READ_INPUT_REGISTERS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
+                for (std::size_t bit = 0; bit < MODBUS_BITS_PER_REGISTER; bit++) {
+                    auto val = static_cast<std::size_t>(dest16[i] >> bit) & 1U;
+                    out.push_back(static_cast<bool>(val));
+                }
+            }
+            break;
+        default:
+            throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
+            break;
+    }
+}
+
+// NOTE: This method relies on lock from calling function!
+void IOInterfaceModbus::updateInputDiscreteModbusTransformSpan2LSB(const ConfigInputDiscrete &configInputDiscrete,
+                                                                   std::vector<std::uint8_t> &dest8,
+                                                                   std::vector<std::uint16_t> &dest16,
+                                                                   std::vector<bool> &out) {
+    // For discrete we use only the first bit, so keep it simple and skip higher bit addresses
+    switch (configInputDiscrete.functionCode) {
+        case FUNCTION_CODE_READ_BITS:
+        case FUNCTION_CODE_READ_INPUT_BITS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems / 2; i += 2) {
+                out.push_back(static_cast<bool>(dest8[i]));
+            }
+            break;
+        case FUNCTION_CODE_READ_REGISTERS:
+        case FUNCTION_CODE_READ_INPUT_REGISTERS:
+            for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems / 2; i += 2) {
+                out.push_back(static_cast<bool>(dest16[i]));
+            }
+            break;
+        default:
+            throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
+            break;
+    }
+}
+
+// NOTE: This method relies on lock from calling function!
+void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInputDiscrete) {
+    if (modbus_set_slave(mCTX, configInputDiscrete.slaveID) == -1) {
+        throw std::runtime_error("IOInterfaceModbus: Invalid slave ID: " + std::to_string(configInputDiscrete.slaveID));
+    }
+
+    std::vector<std::uint8_t> dest8(configInputDiscrete.numAddressedItems);
+    std::vector<std::uint16_t> dest16(configInputDiscrete.numAddressedItems);
+    updateInputDiscreteModbusRead(configInputDiscrete, dest8, dest16);
+
+    updateInputDiscreteModbusClear(configInputDiscrete);
 
     std::vector<bool> out;
     switch (configInputDiscrete.addressLayout) {
         case ConfigFunctionsAddressLayout::ADDRESS:
-            switch (configInputDiscrete.functionCode) {
-                case FUNCTION_CODE_READ_BITS:
-                case FUNCTION_CODE_READ_INPUT_BITS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        out.push_back(static_cast<bool>(dest8[i]));
-                    }
-                    break;
-                case FUNCTION_CODE_READ_REGISTERS:
-                case FUNCTION_CODE_READ_INPUT_REGISTERS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        out.push_back(static_cast<bool>(dest16[i]));
-                    }
-                    break;
-                default:
-                    throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
-                    break;
-            }
+            updateInputDiscreteModbusTransformAddress(configInputDiscrete, dest8, dest16, out);
             break;
         case ConfigFunctionsAddressLayout::BITS_LSB:
-            switch (configInputDiscrete.functionCode) {
-                case FUNCTION_CODE_READ_BITS:
-                case FUNCTION_CODE_READ_INPUT_BITS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t bit = 0; bit < MODBUS_BITS_PER_BYTE; bit++) {
-                            auto val = static_cast<std::size_t>(dest8[i] >> bit) & 1U;
-                            out.push_back(static_cast<bool>(val));
-                        }
-                    }
-                    break;
-                case FUNCTION_CODE_READ_REGISTERS:
-                case FUNCTION_CODE_READ_INPUT_REGISTERS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems; i++) {
-                        for (std::size_t bit = 0; bit < MODBUS_BITS_PER_REGISTER; bit++) {
-                            auto val = static_cast<std::size_t>(dest16[i] >> bit) & 1U;
-                            out.push_back(static_cast<bool>(val));
-                        }
-                    }
-                    break;
-                default:
-                    throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
-                    break;
-            }
+            updateInputDiscreteModbusTransformBitsLSB(configInputDiscrete, dest8, dest16, out);
             break;
         case ConfigFunctionsAddressLayout::SPAN_2_LSB:
-            // For discrete we use only the first bit, so keep it simple and skip higher bit addresses
-            switch (configInputDiscrete.functionCode) {
-                case FUNCTION_CODE_READ_BITS:
-                case FUNCTION_CODE_READ_INPUT_BITS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems / 2; i += 2) {
-                        out.push_back(static_cast<bool>(dest8[i]));
-                    }
-                    break;
-                case FUNCTION_CODE_READ_REGISTERS:
-                case FUNCTION_CODE_READ_INPUT_REGISTERS:
-                    for (std::size_t i = 0; i < configInputDiscrete.numAddressedItems / 2; i += 2) {
-                        out.push_back(static_cast<bool>(dest16[i]));
-                    }
-                    break;
-                default:
-                    throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input function code!");
-                    break;
-            }
+            updateInputDiscreteModbusTransformSpan2LSB(configInputDiscrete, dest8, dest16, out);
             break;
-        
         default:
             throw std::runtime_error("IOInterfaceModbus: Incorrect discrete input address layout!");
             break;
