@@ -70,7 +70,7 @@ namespace aniray {
 using std::size_t;
 using std::uint8_t;
 
-const size_t ANIRAY_NODES_FROM_CSV_NUM_COLUMNS = 11;
+const size_t ANIRAY_NODES_FROM_CSV_NUM_COLUMNS = 15;
 
 template <typename NodeT> class NodeArray {
 public:
@@ -80,6 +80,7 @@ public:
   NodeArray(std::vector<NodeT> nodes,
             const std::map<std::string, std::vector<size_t>> &groups) {
     MultiPoint points;
+    mGridIndexMax = PointGridIndex(0, 0, 0);
     size_t index = 0;
     for (NodeT node : nodes) {
       mNodes.push_back(std::make_shared<NodeT>(node));
@@ -91,6 +92,19 @@ public:
         }
       }
       index++;
+
+      if (node.inGrid()) {
+        mInGrid = true;
+        if (mGridIndexMax.x() < node.gridIndex().x()) {
+          mGridIndexMax.x(node.gridIndex().x());
+        }
+        if (mGridIndexMax.y() < node.gridIndex().y()) {
+          mGridIndexMax.y(node.gridIndex().y());
+        }
+        if (mGridIndexMax.z() < node.gridIndex().z()) {
+          mGridIndexMax.z(node.gridIndex().z());
+        }
+      }
     }
     mCenter = boost::geometry::return_centroid<Point, MultiPoint>(points);
     mEnvelope = boost::geometry::return_envelope<Box, MultiPoint>(points);
@@ -158,6 +172,14 @@ public:
     return mGroups;
   }
 
+  [[nodiscard]] auto inGrid() const ->bool {
+    return mInGrid;
+  }
+
+  [[nodiscard]] auto gridIndexMax() const -> PointGridIndex {
+    return mGridIndexMax;
+  }
+
   auto nodes() -> std::vector<std::shared_ptr<NodeT>> & {
     return mNodes;
   }
@@ -204,7 +226,11 @@ public:
          << ",zDeg"
          << ",ignore"
          << ",sampleRadius"
-         << ",groups" << std::endl;
+         << ",groups"
+         << ",inGrid"
+         << ",gridIndexX"
+         << ",gridIndexY"
+         << ",gridIndexZ" << std::endl;
     for (std::shared_ptr<NodeT> node : mNodes) {
       std::string nodeGroups;
       size_t groupsCount = nodeGroupsToString(node, &nodeGroups);
@@ -216,7 +242,7 @@ public:
       file << "," << std::to_string(node->rot().z() * -1) << ","
            << std::to_string(node->rot().y() * -1) << ","
            << std::to_string(node->rot().x() * -1);
-      file << "," << std::boolalpha << node->ignore();
+      file << "," << std::boolalpha << node->ignore() << std::noboolalpha;
       file << "," << std::to_string(node->sampleRadius());
       if (groupsCount >= 2) {
         file << ",\"";
@@ -227,6 +253,11 @@ public:
       if (groupsCount >= 2) {
         file << "\"";
       }
+      file << "," << std::boolalpha << node->inGrid() << std::noboolalpha;
+      file << "," << std::to_string(node->gridIndex().x()) << ","
+           << std::to_string(node->gridIndex().z()) << ","
+           << std::to_string(
+                  node->gridIndex().y()); // Real world z is up, in sim y is up
       file << std::endl;
     }
     file.close();
@@ -285,6 +316,8 @@ private:
   Box mEnvelope;
   std::string mHash;
   std::map<std::string, std::vector<std::shared_ptr<NodeT>>> mGroups;
+  bool mInGrid;
+  PointGridIndex mGridIndexMax;
 
   static auto getCacheName(double spacing, const std::string &targetHash)
       -> std::string {
@@ -301,7 +334,8 @@ private:
                   io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>>
         in(filename);
     in.read_header(io::ignore_extra_column, "universe", "startAddr", "x", "y",
-                   "z", "xDeg", "yDeg", "zDeg", "ignore", "sampleRadius", "groups");
+                   "z", "xDeg", "yDeg", "zDeg", "ignore", "sampleRadius", "groups",
+                   "inGrid", "gridIndexX", "gridIndexY", "gridIndexZ");
     uint32_t universe = 0;
     uint8_t startAddr = 0;
     double x = 0;
@@ -310,15 +344,21 @@ private:
     double xDeg = 0;
     double yDeg = 0;
     double zDeg = 0;
+    std::size_t gridIndexX = 0;
+    std::size_t gridIndexY = 0;
+    std::size_t gridIndexZ = 0;
     std::string ignoreStr;
+    std::string inGridStr;
     std::string groupsStr;
     bool ignore = false;
+    bool inGrid = false;
     double sampleRadius = 0;
     std::map<std::string, std::vector<size_t>> groups;
     size_t index = 0;
     // Real world z is up, in sim y is up
     while (in.read_row(universe, startAddr, x, z, y, xDeg, zDeg, yDeg,
-                       ignoreStr, sampleRadius, groupsStr)) {
+                       ignoreStr, sampleRadius, groupsStr, inGridStr,
+                       gridIndexX, gridIndexZ, gridIndexY)) {
       boost::algorithm::trim(ignoreStr);
       boost::algorithm::to_lower(ignoreStr);
       DMXAddr addr{universe, startAddr};
@@ -332,6 +372,19 @@ private:
             << "NodeArray: Unknown ignore bool value for nodes {" << addr
             << "}, ignoring nodes";
       }
+      boost::algorithm::trim(inGridStr);
+      boost::algorithm::to_lower(inGridStr);
+      if (inGridStr == "true") {
+        inGrid = true;
+      } else if (inGridStr == "false" || inGridStr.empty()) {
+        inGrid = false;
+      } else {
+        ignore = true;
+        inGrid = false;
+        BOOST_LOG_TRIVIAL(warning)
+            << "NodeArray: Unknown inGrid bool value for nodes {" << addr
+            << "}, ignoring nodes";
+      }
       std::stringstream groupsStream;
       groupsStream << groupsStr;
       while (groupsStream.good()) {
@@ -342,8 +395,9 @@ private:
         }
       }
       nodes.push_back(NodeT(Point(x, y, z * -1),
-                                    Point(zDeg * -1, yDeg * -1, xDeg * -1),
-                                    addr, ignore, sampleRadius));
+                            Point(zDeg * -1, yDeg * -1, xDeg * -1),
+                            PointGridIndex(gridIndexX, gridIndexY, gridIndexZ),
+                            addr, ignore, sampleRadius));
       index++;
     }
     return std::make_tuple(nodes, groups);
@@ -383,8 +437,8 @@ private:
           double z = static_cast<double>(k) * spacing + gridStart.z();
           Point newPoint(x, y, z);
           targetNodeArray.findNodesInRadiusOfSource(
-              newPoint, [newPoint, &nodes]([[maybe_unused]] std::shared_ptr<NodeT> targetNode) mutable -> bool {
-                nodes.push_back(NodeT(newPoint, Point(0, 0, 0)));
+              newPoint, [newPoint, &nodes, i, j, k]([[maybe_unused]] std::shared_ptr<NodeT> targetNode) mutable -> bool {
+                nodes.push_back(NodeT(newPoint, Point(0, 0, 0), PointGridIndex(i, j, k)));
                 return true;
               });
         }
