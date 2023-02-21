@@ -50,6 +50,8 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
         // move assignment implicitly deleted by boost::asio::io_context (-Wdefaulted-function-deleted)
 
         void start();
+        void stop();
+        [[nodiscard]] auto running() const -> bool;
 
         auto updateRate() const -> std::chrono::milliseconds;
         void updateRate(std::chrono::milliseconds updateRateMs);
@@ -57,6 +59,7 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
     protected:
         virtual void periodicAction() = 0;
     private:
+        bool mRunning = false;
         std::chrono::milliseconds mUpdateRateMs;
         boost::asio::io_context mIOContext;
         std::unique_ptr<boost::asio::steady_timer> mTimer;

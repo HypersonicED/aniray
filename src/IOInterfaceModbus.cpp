@@ -321,23 +321,27 @@ void IOInterfaceModbus::updateInputDiscrete(const ConfigInputDiscrete &configInp
     values->setValues(out);
 }
 
-IOInterfaceModbusThread::IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs)
+IOInterfaceModbusPeriodicThread::IOInterfaceModbusPeriodicThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs)
     : IOInterfaceModbus(std::move(tcpAddress), tcpPort)
     , PeriodicThread(updateRateMs) {}
 
-void IOInterfaceModbusThread::periodicAction() {
+void IOInterfaceModbusPeriodicThread::periodicAction() {
     try {
         refreshInputs();
     } catch (const std::exception &e) {
         mRefreshError = true;
-        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusThread: Refresh error: " << e.what();
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Refresh error: " << e.what();
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Stopping due to error";
+        stop();
     } catch (...) {
         mRefreshError = true;
-        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusThread: Refresh error: Unknown";
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Refresh error: Unknown";
+        BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Stopping due to error";
+        stop();
     }
 }
 
-auto IOInterfaceModbusThread::refreshHasErrored() -> bool {
+auto IOInterfaceModbusPeriodicThread::refreshHasErrored() -> bool {
     return mRefreshError;
 }
 

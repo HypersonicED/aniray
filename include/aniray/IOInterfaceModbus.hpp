@@ -143,9 +143,9 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         // void updateInputsCounter(ConfigFunction functionConfig) {}
 };
 
-class IOInterfaceModbusThread : public IOInterfaceModbus, public PeriodicThread {
+class IOInterfaceModbusPeriodicThread : public IOInterfaceModbus, public PeriodicThread {
     public:
-        IOInterfaceModbusThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs);
+        IOInterfaceModbusPeriodicThread(std::string tcpAddress, std::uint16_t tcpPort, std::chrono::milliseconds updateRateMs);
         auto refreshHasErrored() -> bool;
     private:
         void periodicAction() override;

@@ -53,7 +53,17 @@ PeriodicThread::PeriodicThread(std::chrono::milliseconds updateRateMs)
 }
 
 void PeriodicThread::start() {
+    mRunning = true;
     mIOThread = std::make_unique<boost::thread>([ObjectPtr = &mIOContext] { ObjectPtr->run(); });
+}
+
+void PeriodicThread::stop() {
+    mIOContext.stop();
+    mRunning = false;
+}
+
+[[nodiscard]] auto PeriodicThread::running() const -> bool {
+    return mRunning;
 }
 
 auto PeriodicThread::updateRate() const -> std::chrono::milliseconds {
@@ -67,7 +77,7 @@ void PeriodicThread::updateRate(std::chrono::milliseconds updateRateMs) {
 }
 
 PeriodicThread::~PeriodicThread() {
-    mIOContext.stop();
+   stop();
     // if (mIOThread->joinable()) {
     //     mIOThread->join();
     // }
