@@ -63,6 +63,16 @@ struct ConfigInputDiscrete {
 //   std::uint16_t clearNumAddressedItems;
 };
 
+enum class InitializeOptionsMode {
+    TCP
+};
+
+struct InitializeOptions {
+    InitializeOptionsMode mode;
+    std::string tcpAddress;
+    std::uint16_t tcpPort;
+};
+
 // Not enum to enforce strong typing
 const std::uint8_t FUNCTION_CODE_READ_BITS = 1;
 const std::uint8_t FUNCTION_CODE_READ_INPUT_BITS = 2;
@@ -94,6 +104,7 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
         auto operator=(IOInterfaceModbus&&) noexcept -> IOInterfaceModbus& = delete;  // move assignment
 
         void refreshInputs() override;
+        void reconnect();
         void setupInputDiscrete(const std::string &name,
                                 std::uint8_t slaveID,
                                 std::uint8_t functionCode,
@@ -110,12 +121,20 @@ class IOInterfaceModbus : public aniray::IOInterface::IOInterfaceGeneric {
                                 std::uint16_t clearStartAddress,
                                 bool onlyClearSingleAddress,
                                 bool clearHigh);
+        [[nodiscard]] auto modbusInitialized() const -> bool;
+
     private:
         std::unordered_map<std::string, ConfigInputDiscrete> mInputsDiscreteModbus;
+        mutable std::shared_mutex mMutexModbusInitialize;
         mutable std::shared_mutex mMutexInputsDiscreteModbus;
         modbus_t *mCTX;
+        bool mModbusInitialized = false;
+        InitializeOptions mInitializeOptions;
 
-        void setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort);
+        void initialize();
+        void initConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort);
+        void deInitializeNoLock();
+        void deInitialize();
         void updateInputDiscreteModbusRead(const ConfigInputDiscrete &configInputDiscrete,
                                            std::vector<std::uint8_t> &dest8,
                                            std::vector<std::uint16_t> &dest16);

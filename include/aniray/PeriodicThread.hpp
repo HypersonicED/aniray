@@ -59,6 +59,7 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
     protected:
         virtual void periodicAction() = 0;
     private:
+        bool mWasRunning = false;
         bool mRunning = false;
         std::chrono::milliseconds mUpdateRateMs;
         boost::asio::io_context mIOContext;

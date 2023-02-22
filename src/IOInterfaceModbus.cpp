@@ -56,26 +56,74 @@
 namespace aniray::IOInterface::Modbus {
 
 IOInterfaceModbus::IOInterfaceModbus(std::string tcpAddress, std::uint16_t tcpPort) {
-        setupConnectionTCP(std::move(tcpAddress), tcpPort);
+        mInitializeOptions = {
+            .mode = InitializeOptionsMode::TCP,
+            .tcpAddress = std::move(tcpAddress),
+            .tcpPort = tcpPort
+        };
+        initialize();
 
         // Refresh inputs to initially populate values and confirm all addresses are reachable
         // refreshInputs();
     }
 
 IOInterfaceModbus::~IOInterfaceModbus() {
-    modbus_close(mCTX);
-    modbus_free(mCTX);
+    // Intentionally no lock, never block destructor
+    deInitialize();
 }
-// NOTE: This method relies on lock from calling function (or none if constructor)!
-void IOInterfaceModbus::setupConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort) {
+
+[[nodiscard]] auto IOInterfaceModbus::modbusInitialized() const -> bool {
+    const std::shared_lock<std::shared_mutex> lock(mMutexModbusInitialize);
+    return mModbusInitialized;
+}
+
+// NOTE: This method relies on lock from calling function !
+void IOInterfaceModbus::deInitializeNoLock() {
+    if (mCTX != nullptr) {
+        if (mModbusInitialized) {
+            modbus_close(mCTX);
+            modbus_free(mCTX);
+            mModbusInitialized = false;
+        }
+    }
+}
+
+// NOTE: This method relies on lock from calling function !
+void IOInterfaceModbus::deInitialize() {
+    const std::unique_lock<std::shared_mutex> lock(mMutexModbusInitialize);
+    deInitializeNoLock();
+}
+
+
+void IOInterfaceModbus::reconnect() {
+    deInitialize();
+    initialize();
+}
+
+void IOInterfaceModbus::initialize() {
+    switch (mInitializeOptions.mode) {
+        case InitializeOptionsMode::TCP:
+            initConnectionTCP(mInitializeOptions.tcpAddress, mInitializeOptions.tcpPort);
+            break;
+        default:
+            throw std::runtime_error("IOInterfaceModbus: Unknown initialize options mode!");
+            break;
+    }
+}
+
+void IOInterfaceModbus::initConnectionTCP(std::string tcpAddress, std::uint16_t tcpPort) {
+    const std::unique_lock<std::shared_mutex> lock(mMutexModbusInitialize);
     mCTX = modbus_new_tcp_pi(tcpAddress.c_str(), std::to_string(tcpPort).c_str());
     if (mCTX == nullptr) {
+        mModbusInitialized = false;
         throw std::runtime_error("IOInterfaceModbus: Unable to allocate libmodbus context");
     }
     if (modbus_connect(mCTX) == -1) {
+        mModbusInitialized = false;
         modbus_free(mCTX);
         throw std::runtime_error("IOInterfaceModbus: Connection failed: " + std::string(modbus_strerror(errno)));
     }
+    mModbusInitialized = true;
     BOOST_LOG_TRIVIAL(info) << "IOInterfaceModbus: Connected to "
                             << tcpAddress << ":" << tcpPort;
 }
@@ -130,11 +178,14 @@ void IOInterfaceModbus::setupInputDiscrete(const std::string &name,
 }
 
 void IOInterfaceModbus::refreshInputs() {
+    const std::shared_lock<std::shared_mutex> initializeLock(mMutexModbusInitialize);
     const std::shared_lock<std::shared_mutex> inputsDiscreteLock(mMutexInputsDiscreteModbus);
-    for (auto const& [name, configInputDiscrete] : mInputsDiscreteModbus) {
-        updateInputDiscrete(configInputDiscrete);
+    if (mModbusInitialized) {
+        for (auto const& [name, configInputDiscrete] : mInputsDiscreteModbus) {
+            updateInputDiscrete(configInputDiscrete);
+        }
+        // inputsDiscreteLock.unlock(); // will need this when other types of input are added
     }
-    // inputsDiscreteLock.unlock(); // will need this when other types of input are added
 }
 
 // NOTE: This method relies on lock from calling function!
@@ -329,15 +380,27 @@ void IOInterfaceModbusPeriodicThread::periodicAction() {
     try {
         refreshInputs();
     } catch (const std::exception &e) {
+        stop();
         mRefreshError = true;
         BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Refresh error: " << e.what();
         BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Stopping due to error";
-        stop();
     } catch (...) {
+        stop();
         mRefreshError = true;
         BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Refresh error: Unknown";
         BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Stopping due to error";
-        stop();
+    }
+    while (mRefreshError || !running() || !modbusInitialized()) {
+        BOOST_LOG_TRIVIAL(info) << "IOInterfaceModbusPeriodicThread: Retrying connection";
+        try {
+            reconnect();
+            start();
+            mRefreshError = false;
+        } catch (const std::exception &e) {
+            BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Retrying connection error: " << e.what();
+        } catch (...) {
+            BOOST_LOG_TRIVIAL(error) << "IOInterfaceModbusPeriodicThread: Retrying connection error: Unknown";
+        }
     }
 }
 

@@ -25,7 +25,6 @@
  */
 
 #include <chrono>
-// #include <iostream>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -53,8 +52,13 @@ PeriodicThread::PeriodicThread(std::chrono::milliseconds updateRateMs)
 }
 
 void PeriodicThread::start() {
+    if (mWasRunning) {
+        mIOContext.restart();
+    } else {
+        mIOThread = std::make_unique<boost::thread>([ObjectPtr = &mIOContext] { ObjectPtr->run(); });
+    }
+    mWasRunning = true;
     mRunning = true;
-    mIOThread = std::make_unique<boost::thread>([ObjectPtr = &mIOContext] { ObjectPtr->run(); });
 }
 
 void PeriodicThread::stop() {
