@@ -270,6 +270,12 @@ public:
   template <typename onFindFunc> void findNodesInRadiusOfSource(
       Point sourceCoords, onFindFunc&& onFind, bool customRadius,
       double sampleRadius) {
+      findNodesInRadiusOfSource(sourceCoords, onFind, customRadius,
+                                sampleRadius, false, false, false);
+  }
+  template <typename onFindFunc> void findNodesInRadiusOfSource(
+      Point sourceCoords, onFindFunc&& onFind, bool customRadius,
+      double sampleRadius, bool ignoreX, bool ignoreY, bool ignoreZ) {
     static std::map<double, double> comparableDistances;
     for (std::shared_ptr<NodeT> targetNode : mNodes) {
       if (targetNode->ignore()) {
@@ -280,15 +286,21 @@ public:
       if (!customRadius) {
         useSampleRadius = targetNode->sampleRadius();
       }
-      if (std::abs(targetCoords.x() - sourceCoords.x()) > useSampleRadius) {
+      if (!ignoreX &&
+          std::abs(targetCoords.x() - sourceCoords.x()) > useSampleRadius) {
         continue;
       }
-      if (std::abs(targetCoords.y() - sourceCoords.y()) > useSampleRadius) {
+      if (!ignoreY &&
+          std::abs(targetCoords.y() - sourceCoords.y()) > useSampleRadius) {
         continue;
       }
-      if (std::abs(targetCoords.z() - sourceCoords.z()) > useSampleRadius) {
+      if (!ignoreZ &&
+          std::abs(targetCoords.z() - sourceCoords.z()) > useSampleRadius) {
         continue;
       }
+      if (ignoreX) { targetCoords.x(sourceCoords.x()); }
+      if (ignoreY) { targetCoords.y(sourceCoords.y()); }
+      if (ignoreZ) { targetCoords.z(sourceCoords.z()); }
       if (comparableDistances.count(useSampleRadius) <= 0) {
         comparableDistances[useSampleRadius] =
             boost::geometry::comparable_distance(
