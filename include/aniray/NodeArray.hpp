@@ -286,16 +286,8 @@ public:
       if (!customRadius) {
         useSampleRadius = targetNode->sampleRadius();
       }
-      if (!ignoreX &&
-          std::abs(targetCoords.x() - sourceCoords.x()) > useSampleRadius) {
-        continue;
-      }
-      if (!ignoreY &&
-          std::abs(targetCoords.y() - sourceCoords.y()) > useSampleRadius) {
-        continue;
-      }
-      if (!ignoreZ &&
-          std::abs(targetCoords.z() - sourceCoords.z()) > useSampleRadius) {
+      if (quickCheckCanBeInRadius(sourceCoords, targetCoords, useSampleRadius,
+          ignoreX, ignoreY, ignoreZ)) {
         continue;
       }
       if (ignoreX) { targetCoords.x(sourceCoords.x()); }
@@ -330,6 +322,25 @@ private:
   std::map<std::string, std::vector<std::shared_ptr<NodeT>>> mGroups;
   bool mInGrid;
   PointGridIndex mGridIndexMax;
+
+  static auto quickCheckCanBeInRadius(Point sourceCoords, Point targetCoords,
+                                      double radius, bool ignoreX,
+                                      bool ignoreY, bool ignoreZ) -> bool {
+    bool res = false;
+    if (!ignoreX &&
+        std::abs(targetCoords.x() - sourceCoords.x()) > radius) {
+      res = true;
+    }
+    else if (!ignoreY &&
+        std::abs(targetCoords.y() - sourceCoords.y()) > radius) {
+      res = true;
+    }
+    else if (!ignoreZ &&
+        std::abs(targetCoords.z() - sourceCoords.z()) > radius) {
+      res = true;
+    }
+    return res;
+  }
 
   static auto getCacheName(double spacing, const std::string &targetHash)
       -> std::string {
