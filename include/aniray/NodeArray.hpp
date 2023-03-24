@@ -327,16 +327,9 @@ private:
                                       double radius, bool ignoreX,
                                       bool ignoreY, bool ignoreZ) -> bool {
     bool res = false;
-    if (!ignoreX &&
-        std::abs(targetCoords.x() - sourceCoords.x()) > radius) {
-      res = true;
-    }
-    else if (!ignoreY &&
-        std::abs(targetCoords.y() - sourceCoords.y()) > radius) {
-      res = true;
-    }
-    else if (!ignoreZ &&
-        std::abs(targetCoords.z() - sourceCoords.z()) > radius) {
+    if ((!ignoreX && std::abs(targetCoords.x() - sourceCoords.x()) > radius) ||
+        (!ignoreY && std::abs(targetCoords.y() - sourceCoords.y()) > radius) ||
+        (!ignoreZ && std::abs(targetCoords.z() - sourceCoords.z()) > radius)) {
       res = true;
     }
     return res;
