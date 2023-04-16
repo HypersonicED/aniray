@@ -81,6 +81,7 @@ void PeriodicThread::updateRate(std::chrono::milliseconds updateRateMs) {
 }
 
 PeriodicThread::~PeriodicThread() {
+   const std::unique_lock<std::shared_mutex> lock(mHandlerMutex);
    stop();
     // if (mIOThread->joinable()) {
     //     mIOThread->join();
@@ -88,8 +89,9 @@ PeriodicThread::~PeriodicThread() {
 }
 
 void PeriodicThread::timerHandler () {
+    const std::shared_lock<std::shared_mutex> lockHandler(mHandlerMutex);
     periodicAction();
-    const std::shared_lock<std::shared_mutex> lock(mUpdateRateMutex);
+    const std::shared_lock<std::shared_mutex> lockUpdateRate(mUpdateRateMutex);
     mTimer->expires_at(mTimer->expiry() + mUpdateRateMs);
     mTimer->async_wait([this] (const boost::system::error_code&) { timerHandler(); });
 }

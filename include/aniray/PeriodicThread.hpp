@@ -66,6 +66,7 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
         std::unique_ptr<boost::asio::steady_timer> mTimer;
         std::unique_ptr<boost::thread> mIOThread;
         mutable std::shared_mutex mUpdateRateMutex;
+        mutable std::shared_mutex mHandlerMutex;
 
         void timerHandler();
 };
