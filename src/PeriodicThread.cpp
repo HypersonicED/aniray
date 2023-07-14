@@ -24,16 +24,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <system_error>
 
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp> // IWYU pragma: keep
 #include <boost/thread.hpp> // IWYU pragma: keep
+#include <boost/thread/exceptions.hpp>
+#include <boost/thread/interruption.hpp>
 // IWYU pragma: no_include <boost/asio/basic_waitable_timer.hpp>
 // IWYU pragma: no_include <boost/thread/thread_only.hpp>
 // IWYU pragma: no_forward_declare boost::system::error_code
@@ -53,16 +57,22 @@ PeriodicThread::PeriodicThread(std::chrono::milliseconds updateRateMs)
 
 void PeriodicThread::start() {
     if (mWasRunning) {
+        stop();
         mIOContext.restart();
-    } else {
-        mIOThread = std::make_unique<boost::thread>([ObjectPtr = &mIOContext] { ObjectPtr->run(); });
     }
+    mIOThread = std::make_unique<boost::thread>([ObjectPtr = &mIOContext] { ObjectPtr->run(); });
     mWasRunning = true;
     mRunning = true;
 }
 
 void PeriodicThread::stop() {
     mIOContext.stop();
+    if (mIOThread) {
+        mIOThread->interrupt();
+        if (mIOThread->joinable()) {
+            mIOThread->join();
+        }
+    }
     mRunning = false;
 }
 
@@ -81,19 +91,33 @@ void PeriodicThread::updateRate(std::chrono::milliseconds updateRateMs) {
 }
 
 PeriodicThread::~PeriodicThread() {
-   const std::unique_lock<std::shared_mutex> lock(mHandlerMutex);
-   stop();
-    // if (mIOThread->joinable()) {
-    //     mIOThread->join();
-    // }
+    const std::unique_lock<std::shared_mutex> lock(mHandlerMutex);
+    try {
+        stop();
+    } catch (const boost::thread_interrupted&) {
+        // Suppress for destructor
+        return;
+    } catch (const std::system_error& e) {
+        // Suppress for destructor
+        return;
+    } catch (...) {
+        // Suppress for destructor
+        return;
+    }
+    // See https://wiki.sei.cmu.edu/confluence/display/cplusplus/DCL57-CPP.+Do+not+let+exceptions+escape+from+destructors+or+deallocation+functions
+    // for returning in catch()
 }
 
 void PeriodicThread::timerHandler () {
-    const std::shared_lock<std::shared_mutex> lockHandler(mHandlerMutex);
-    periodicAction();
-    const std::shared_lock<std::shared_mutex> lockUpdateRate(mUpdateRateMutex);
-    mTimer->expires_at(mTimer->expiry() + mUpdateRateMs);
-    mTimer->async_wait([this] (const boost::system::error_code&) { timerHandler(); });
+    boost::this_thread::interruption_point();
+    {
+        const std::shared_lock<std::shared_mutex> lockHandler(mHandlerMutex);
+        periodicAction();
+        const std::shared_lock<std::shared_mutex> lockUpdateRate(mUpdateRateMutex);
+        mTimer->expires_at(mTimer->expiry() + mUpdateRateMs);
+        mTimer->async_wait([this] (const boost::system::error_code&) { timerHandler(); });
+    }
+    boost::this_thread::interruption_point();
 }
 
 } // namespace aniray

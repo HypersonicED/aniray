@@ -27,6 +27,7 @@
 #ifndef ANIRAY_PERIODICTHREAD_HPP
 #define ANIRAY_PERIODICTHREAD_HPP
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <shared_mutex>
@@ -60,7 +61,7 @@ class PeriodicThread { // NOLINT(cppcoreguidelines-special-member-functions,hicp
         virtual void periodicAction() = 0;
     private:
         bool mWasRunning = false;
-        bool mRunning = false;
+        std::atomic_bool mRunning = false;
         std::chrono::milliseconds mUpdateRateMs;
         boost::asio::io_context mIOContext;
         std::unique_ptr<boost::asio::steady_timer> mTimer;
